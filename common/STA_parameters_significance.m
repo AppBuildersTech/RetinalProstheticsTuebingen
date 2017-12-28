@@ -14,7 +14,7 @@ function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
 % Stim is the stimulus of the last stimulus trial. I use it to calculate baseline mean and variance. I use these values for significance calculation later.
 % p.cell_id is the name of the cell. le
 % p.leave_out is the exclusion period of the STA.
-% p.ii and p.jj are the trial number start and end.
+% p.first_trial and p.last_tiral are the trial number start and end.
 % p.year is the p.year of the experiment
 % p.cardinal_STA_Only_Burst is 1 if you do fSTA
 % p.vstim is 0 if this function is called by estim script. Else it is 1 if it is called by p.vstim script
@@ -920,9 +920,9 @@ peak_Integration_time_zero_crossing = peak_Integration_time;
 trough_location_time
 trough_Integration_time_zero_crossing = trough_Integration_time;
 
-saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.ii), 'to', num2str(p.jj), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.fig'], 'fig');
+saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.fig'], 'fig');
 set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.ii), 'to', num2str(p.jj), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.jpeg'], 'jpeg');
+saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.jpeg'], 'jpeg');
 
 %% p.weighted_burst, p.singleton_spikes
 date1 = p.year;
