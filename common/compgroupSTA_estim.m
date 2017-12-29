@@ -1,4 +1,4 @@
-function [STA, stimulus_matrix, len, nspikes, inner, Stm_matrix] = compgroupSTA_estim(estim_amp, spcount_binned, tKerLen, STA, inner)
+function [STA, stimulus_matrix, nstim, nspikes, Stm_matrix] = compgroupSTA_estim(estim_amp, spcount_binned, tKerLen, STA)
 % COMPutes GROUP (multiple repeats of the stimulus) Spike Triggered Average for Electrical STIMulation data.
 %
 %  Inputs:
@@ -9,7 +9,7 @@ function [STA, stimulus_matrix, len, nspikes, inner, Stm_matrix] = compgroupSTA_
 %    tKerLen = STA kernel size. Expresed in terms of bins. Hence for a stimulation frequency of 25Hz, kernel size of 25 represents a window of 1s for which the STA is calculated.
 %    STA = Vector of stimuli preceding spikes in given bin multiplied by the number of spikes in that given bin
 %    NSP = Number of spcount_binned across all trials used for the final STA calculation
-%    inner = total number of stimuli vectors used for STA calculation across trials
+%    NSTM = total number of stimuli vectors used for STA calculation across trials
 %    count_TTL = length of stimulus
 
 % This code is mirrored compgroupSTA.m for visual stimuli.
@@ -30,10 +30,8 @@ upperlocation = find(Spinds > (count_TTL - tKerLen));
 % Create a stimulus matrix of the appropriate length (by removing the spikes that occured too early or too late i.e which occured within tKerLen frames of the beginning or end of
 % stimulus block
 
-len = length(Spinds) - length(location) - length(upperlocation); % number of stimuli vectors to be included in STA calculation in this trial
-stimulus_matrix = zeros(len, 2 * tKerLen); % creation of STA vector. The STA vector is tKerLen before 0s and tKerLen after 0s
-
-inner = inner + len; % number of stimuli vectors to be included in STA calculation across all trials
+nstim = length(Spinds) - length(location) - length(upperlocation); % number of stimuli vectors to be included in STA calculation in this trial
+stimulus_matrix = zeros(nstim, 2 * tKerLen); % creation of STA vector. The STA vector is tKerLen before 0s and tKerLen after 0s
 
 nspikes = 0; % number of spikes in each trial
 Stm_matrix = [];
@@ -57,8 +55,6 @@ for i = 1:length(Spinds)
         end
 
         Stm_matrix = [Stm_matrix; stm_matrix];
-
-    else
 
     end
 

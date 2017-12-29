@@ -87,7 +87,7 @@ estim_amps_all = []; % electrical stimulation amplitutes for all the trials
 stimulus_matrix = [];
 
 NSP = 0; % Number of spikes which is the spike count variable for the STAs
-inner = 0; % Total number of stimuli vectors used for STA calculation across trials
+NSTM = 0; % Total number of stimuli vectors used for STA calculation across trials
 
 
 p.skip_cycle = p.alternate_number * 2; % this line was not the STA_simplified
@@ -158,7 +158,10 @@ for trialIdx = trials_to_use
         estim_binranges = vertcat(estim_timings, estim_timings(end)+1/p.stimFreq);
         spcount_binned = histcounts(estim_spiketimes, estim_binranges);      % binned spike counts
 
-        [STA, stimulus_matrix, ~, NSP, inner, Stm_matrix] = compgroupSTA_estim(estim_amp, spcount_binned, p.tKerLen, STA, NSP, inner); % compute STA
+        [STA, stimulus_matrix, nstim , nspikes, Stm_matrix] = compgroupSTA_estim(estim_amp, spcount_binned, p.tKerLen, STA); % compute STA
+        
+        NSP = NSP + nspikes;
+        NSTM = NSTM + nstim;
         
         estim_amps_all = [estim_amps_all estim_amp]; 
         stimulus_matrix = [stimulus_matrix; Stm_matrix];
