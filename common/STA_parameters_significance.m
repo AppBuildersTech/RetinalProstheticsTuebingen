@@ -22,7 +22,7 @@ function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
 % p.singleton_spikes. It is 1 if you include singleton spikes
 
 %% CODE
-if p.Normalise == 1
+if p.Normalize == 1
     plt_ylim = [- 1, 1];
 else
 	plt_ylim = [- 1300, -300];
