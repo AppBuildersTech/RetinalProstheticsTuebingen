@@ -1,4 +1,4 @@
-function [STA, stimulus_matrix, nstim, nspikes, Stm_matrix] = compgroupSTA_estim(estim_amp, spcount_binned, tKerLen, STA)
+function [STA, stimulus_matrix, nstim, nspikes] = compgroupSTA_estim(estim_amp, spcount_binned, tKerLen)
 % COMPutes GROUP (multiple repeats of the stimulus) Spike Triggered Average for Electrical STIMulation data.
 %
 %  Inputs:
@@ -16,45 +16,38 @@ function [STA, stimulus_matrix, nstim, nspikes, Stm_matrix] = compgroupSTA_estim
 
 count_TTL = length(estim_amp);
 
-Spinds = find(spcount_binned); %Find which positions in the spike histogram had spikes
-location = find(Spinds <= tKerLen); %Since I want to store tKerLen frames preceding each spike, I need to exclude those spikes which ocured within the
+bins_with_spikes = find(spcount_binned); %Find which positions in the spike histogram had spikes
+spikes_before_stim = find(bins_with_spikes <= tKerLen); %Since I want to store tKerLen frames preceding each spike, I need to exclude those spikes which ocured within the
 % first tKerLen frames in a stimulus trial. So I find the location of all the spikes that occured
 % before the first tKerLen frames
 
 % Finds the number of spikes that happened within the last tKerLen from the end of the stimulus.
 
-upperlocation = find(Spinds > (count_TTL - tKerLen));
+spikes_after_stim = find(bins_with_spikes > (count_TTL - tKerLen));
 
 % length(location): The last spike that occured before the first tKerLen frames and find its position
 
 % Create a stimulus matrix of the appropriate length (by removing the spikes that occured too early or too late i.e which occured within tKerLen frames of the beginning or end of
 % stimulus block
 
-nstim = length(Spinds) - length(location) - length(upperlocation); % number of stimuli vectors to be included in STA calculation in this trial
-stimulus_matrix = zeros(nstim, 2 * tKerLen); % creation of STA vector. The STA vector is tKerLen before 0s and tKerLen after 0s
+nstim = length(bins_with_spikes) - length(spikes_before_stim) - length(spikes_after_stim); % number of stimuli vectors to be included in STA calculation in this trial
+stimulus_matrix = zeros(nstim, tKerLen * 2); % creation of STA vector. The STA vector is tKerLen before 0s and tKerLen after 0s
 
 nspikes = 0; % number of spikes in each trial
-Stm_matrix = [];
+
+STA = zeros(2 * tKerLen, 1);
 
 % For loop that actually calculates the STA
-for i = 1:length(Spinds)
+for i = 1:length(bins_with_spikes)
 
-    if ((Spinds(i)) > (tKerLen) && (Spinds(i)) < (count_TTL - tKerLen)) % If the spike occurs after the first tKerLen frames in a trial or before the last tKerLen frames in a trial include the stimuli for the STA calculation
+    if (bins_with_spikes(i) > tKerLen) && (bins_with_spikes(i) < (count_TTL - tKerLen)) % If the spike occurs after the first tKerLen frames in a trial or before the last tKerLen frames in a trial include the stimuli for the STA calculation
+       
+        stimulus_matrix(i, :) = estim_amp(:, (bins_with_spikes(i)) + (1 - tKerLen):(bins_with_spikes(i)) + tKerLen)'; % Stores the stimuli used for the STA calculation
 
-        STA = STA + (estim_amp(:, (Spinds(i)) - tKerLen + 1:(Spinds(i)) + tKerLen) .* spcount_binned(Spinds(i)))'; % The STA vector adds up all the stimuli occuring before a spike. The stimuli are multiplied by the number of spikes they cause before they
-        % are used for the STA calculation
+        STA = STA + (stimulus_matrix(i, :) .* spcount_binned(bins_with_spikes(i)))';
+        % The STA vector adds up all the stimuli occuring before a spike. The stimuli are multiplied by the number of spikes they cause before they are used for the STA calculation
 
-        stimulus_matrix(i, :) = estim_amp(:, (Spinds(i)) - tKerLen + 1:(Spinds(i)) + tKerLen)'; % Stores the stimuli used for the STA calculation
-
-        nspikes = nspikes + spcount_binned(Spinds(i)); % Update the number of spikes used for the STA calculation
-
-        stm_matrix = zeros(spcount_binned(Spinds(i)), tKerLen * 2);
-
-        for t = 1:spcount_binned(Spinds(i))
-            stm_matrix(t, :) = estim_amp(:, (Spinds(i)) - tKerLen + 1:(Spinds(i)) + tKerLen)';
-        end
-
-        Stm_matrix = [Stm_matrix; stm_matrix];
+        nspikes = nspikes + spcount_binned(bins_with_spikes(i)); % Update the number of spikes used for the STA calculation        
 
     end
 
