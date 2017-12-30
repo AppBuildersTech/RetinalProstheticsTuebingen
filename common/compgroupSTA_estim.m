@@ -39,16 +39,10 @@ STA = zeros(2 * tKerLen, 1);
 
 % For loop that actually calculates the STA
 for i = 1:length(bins_with_spikes)
-
     if (bins_with_spikes(i) > tKerLen) && (bins_with_spikes(i) < (count_TTL - tKerLen)) % If the spike occurs after the first tKerLen frames in a trial or before the last tKerLen frames in a trial include the stimuli for the STA calculation
-       
         stimulus_matrix(i, :) = estim_amp(:, (bins_with_spikes(i)) + (1 - tKerLen):(bins_with_spikes(i)) + tKerLen)'; % Stores the stimuli used for the STA calculation
-
         STA = STA + (stimulus_matrix(i, :) .* spcount_binned(bins_with_spikes(i)))';
         % The STA vector adds up all the stimuli occuring before a spike. The stimuli are multiplied by the number of spikes they cause before they are used for the STA calculation
-
         nspikes = nspikes + spcount_binned(bins_with_spikes(i)); % Update the number of spikes used for the STA calculation        
-
     end
-
 end

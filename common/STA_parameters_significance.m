@@ -1,3 +1,5 @@
+function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
+
 % This function calculates calculates parameters like location of peak & trough of STA and the
 % integration window of peak and integration window of trough
 % fig4 is the cubic splined STA. Marked with black circles, are the width of
@@ -6,7 +8,6 @@
 % Created by Sudsa (20150730)
 
 %% paramters of the function call
-function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
 % Frequency is the frequency of stimulation
 % dump is the location to which the figures should be saved. Its calculated
 % implicitly in the previous code STA.  p.tKerLen is 25. frame is .04s.
@@ -14,7 +15,7 @@ function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
 % Stim is the stimulus of the last stimulus trial. I use it to calculate baseline mean and variance. I use these values for significance calculation later.
 % p.cell_id is the name of the cell. le
 % p.leave_out is the exclusion period of the STA.
-% p.first_trial and p.last_tiral are the trial number start and end.
+% p.first_trial and p.last_trial are the trial number start and end.
 % p.year is the p.year of the experiment
 % p.cardinal_STA_Only_Burst is 1 if you do fSTA
 % p.vstim is 0 if this function is called by estim script. Else it is 1 if it is called by p.vstim script
@@ -25,7 +26,7 @@ function STA_parameters_significance(Frequency, dump, frame, STA, Stim, p)
 if p.Normalize == 1
     plt_ylim = [- 1, 1];
 else
-	plt_ylim = [- 1300, -300];
+    plt_ylim = [- 1300, - 300];
 end
 
 %% cubic splined sta
@@ -920,9 +921,9 @@ peak_Integration_time_zero_crossing = peak_Integration_time;
 trough_location_time
 trough_Integration_time_zero_crossing = trough_Integration_time;
 
-saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.fig'], 'fig');
+saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_trial), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.fig'], 'fig');
 set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.jpeg'], 'jpeg');
+saveas(gcf, [dump, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_trial), '-', 'cubic splined', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), '.jpeg'], 'jpeg');
 
 %% p.weighted_burst, p.singleton_spikes
 date1 = p.year;
@@ -954,6 +955,6 @@ if p.vstim
 end
 
 if ~ exist(dump, 'dir'), mkdir(dump); end
-save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'Frequency', 'peak_T', 'trough_T', 'baseline_avg_right', 'baseline_std_right', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
+save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'peak_T', 'trough_T', 'baseline_avg_right', 'baseline_std_right', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
 
 end

@@ -13,6 +13,8 @@ function [estim_amps estim_times V_excite V_inhibit Cov_Matrix Cov_Matrix_raw_st
 load(fullfile(p.data_dir,strcat(p.exp_id, p.dfile_suffix)));
 spiketimes = eval(p.cell_id);
 
+stimPeriod = 1/p.stimFreq;
+
 if isnan(p.start_TTL) || isnan(p.stop_TTL)
     A2a = A2a(1:end, 1);% this line was not the STA_simplified
 else
@@ -96,7 +98,7 @@ STA = zeros(2 * p.tKerLen, 1);
 flag_skip = true;
 
 if isnan(p.trials_to_use)
-    trials_to_use = p.first_trial:p.last_tiral;
+    trials_to_use = p.first_trial:p.last_trial;
 else
     trials_to_use = p.trials_to_use;
 end
@@ -169,7 +171,6 @@ for trialIdx = trials_to_use
         % outputs of the function these two should be in accordance. that
         % means the only the stimulus amplitudes used for STA should be
         % considered the same as stimulu times
-        
     end
 end
 
@@ -178,190 +179,57 @@ STA = STA / nspikes; % Divides the Stimulus Sum/ Total Number of Spikes
 %% Plots begin from here
 line_thickness = 2;
 
+STA_t = (0.5 - p.tKerLen)* stimPeriod:stimPeriod:(p.tKerLen  - .5)* stimPeriod;
+estim_mean = ceil(mean(mean(estim_amps)));
+estim_meanline = estim_mean * ones(2 * p.tKerLen, 1);
+total_trial_time = p.trial_length_in_secs * length(trials_to_use);
+mean_FR = nspikes / total_trial_time;
+
 if p.Normalize == 1
     plt_ylim = [-1, 1];
 else
 	plt_ylim = [-1300, -300];
 end
 
-y = 1 * STA;
-frame = 1 / (count_TTL / p.trial_length_in_secs);
-x = (- (p.tKerLen)) * (frame) + .5 * frame:frame:p.tKerLen * frame - .5 * frame;
-h = plot(x, y);
-set(h, 'LineWidth', line_thickness)
-baseline = (1 * mean(trial_estim_amps)) * ones(2 * p.tKerLen, 1);
-hold on
-plot(x, baseline, 'k')
+fig_basename = sprintf('[%s]_%s_%dto%d_FR=%2.3fHz_leave_out=%0.2fs_cSOB=%d_WB=%d_SS=%d',...
+    p.cell_id,p.year,p.first_trial,p.last_trial,mean_FR,p.leave_out,p.cardinal_STA_Only_Burst,p.weighted_burst,p.singleton_spikes);
+
+%% Plot 1: STA
+figure
+set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
 set(gcf, 'color', 'w');
-zeromarker = zeros(length(plt_ylim(1):100:plt_ylim(2)));
-hold on
-plot(zeromarker, plt_ylim(1):100:plt_ylim(2), 'k');
+
+plot(STA_t, STA,'LineWidth', line_thickness);hold on;
+plot(STA_t, estim_meanline, 'k');
+
+yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
+plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
+
+title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)])
-hold on
-legend(['STA:spks = ', int2str(nspikes)], ['Mean Stimulus : ', int2str(p.stimFreq), 'Hz stm. frq. : 35% var '])
-%%
-fig_names = strcat(p.names, p.cell_id);
-total_time = p.trial_length_in_secs * length(trials_to_use);
-Frequency = nspikes / (length(trials_to_use) * p.trial_length_in_secs);
-xlabel({'Time (sec)'})
-ylabel('Mean Stimulus (mV)')
-mousetype = ' C57Bl/6 (wt) ';
-figure_heading = strcat(p.year, p.cell_id, mousetype, ' FR = ', num2str(Frequency), ' Hz: ', num2str(total_time), ' sec : epiretinal', ' lock out is ', num2str(p.leave_out), 's', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes));
-title(figure_heading)
-set(gcf, 'name', fig_names)
-fname = strcat(p.exp_id, int2str(p.stimFreq), 'Hz_', num2str(p.cont), '_', p.mean_V, '\', p.cell_id)
-fname = strcat(p.work_dir, fname, '\');
-if ~ exist(fname, 'dir'), mkdir(fname); end
- 
-    ext = '.fig';
- 
-    if (p.Normalize == 0)
-     
-        saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'not_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), ' WB is ', num2str(p.weighted_burst), ' Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-        set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-     
-        saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'not_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), ' WB is ', num2str(p.weighted_burst), ' Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-     
-        % close all
-        figure
-        %%
-        y = 1 * STA;
-        frame = 1 / (count_TTL / p.trial_length_in_secs);
-     
-        x = (- (p.tKerLen)) * (frame) + .5 * frame:frame:p.tKerLen * frame - .5 * frame;
-        h = plot(x, y);
-        set(gcf, 'color', 'w');
-     
-        saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'not_norm_for_NL', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-        set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-     
-        saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'not_norm_for_NL', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-     
-        %% error bars
-     
-        figure
-        y = 1 * STA;
-        STA_error = std(y(length(y) / 2 + 1:end)) / sqrt(p.tKerLen);
-        STA_error = STA_error * ones(length(y), 1);
-        dim = max(size(estim_times));
-        for ijk = 1:2 * p.tKerLen
-            errorbar_sta(ijk) = std(estim_times(:, ijk)) / sqrt(dim);
-        end
-     
-        frame = 1 / (count_TTL / p.trial_length_in_secs);
-        x = (- (p.tKerLen)) * (frame) + .5 * frame:frame:p.tKerLen * frame - .5 * frame;
-        h = errorbar(x, y, errorbar_sta);
-        set(h, 'LineWidth', line_thickness)
-        baseline = (1 * mean(trial_estim_amps)) * ones(2 * p.tKerLen, 1);
-        hold on
-     
-        errorbar(x, baseline, STA_error, 'k')
-        set(gcf, 'color', 'w');
-        zeromarker = zeros(length(plt_ylim(1):100:plt_ylim(2)));
-        hold on
-        plot(zeromarker, plt_ylim(1):100:plt_ylim(2), 'k');
-        ylim([plt_ylim(1) plt_ylim(2)])
-        hold on
-     
-        legend(['STA:spks = ', int2str(nspikes)], ['Mean Stimulus : ', int2str(p.stimFreq), 'Hz stm. frq. : 35% var '])
-        total_time = p.trial_length_in_secs * length(trials_to_use);
-        Frequency = nspikes / (length(trials_to_use) * p.trial_length_in_secs);
-        xlabel({'Time (sec)'})
-        ylabel('Mean Stimulus (mV)')
-        mousetype = ' C57Bl/6 (wt) ';
-     
-        figure_heading = strcat(p.year, p.cell_id, mousetype, ' FR = ', num2str(Frequency), ' Hz: ', num2str(total_time), ' sec : epiretinal', ' lock out is ', num2str(p.leave_out), 's', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes));
-        title(figure_heading)
-        set(gcf, 'name', fig_names)
-        if ~ exist(fname, 'dir'), mkdir(fname); end
-            ext = '.fig';
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'error_bars_not_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-            set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'error_bars_not_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-         
-        else
-         
-            set(h, 'LineWidth', line_thickness)
-            baseline = (1 * mean(trial_estim_amps)) * ones(2 * p.tKerLen, 1);
-            hold on
-            plot(x, baseline, 'k')
-            set(gcf, 'color', 'w');
-            zeromarker = zeros(length(plt_ylim(1):.05:plt_ylim(2)));
-            hold on
-            plot(zeromarker, plt_ylim(1):.05:plt_ylim(2), 'k');
-            ylim([plt_ylim(1) plt_ylim(2)])
-            hold on
-         
-            legend(['STA:spks = ', int2str(nspikes)], ['Mean Stimulus : ', int2str(p.stimFreq), 'Hz stm. frq. : 35% var '])
-         
-            %%
-            total_time = p.trial_length_in_secs * length(trials_to_use);
-            Frequency = nspikes / (length(p.first_trial:p.last_tiral) * p.trial_length_in_secs);
-            xlabel({'Time (sec)'})
-            ylabel('Mean Stimulus (mV)')
-            mousetype = ' C57Bl/6 (wt) ';
-            set(gcf, 'color', 'w');
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'p.Normalised_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-            set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-         
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'p.Normalised_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-            figure
-            y = 1 * STA;
-            frame = 1 / (count_TTL / p.trial_length_in_secs);
-            x = (- (p.tKerLen)) * (frame) + .5 * frame:frame:p.tKerLen * frame - .5 * frame;
-            h = plot(x, y);
-            set(gcf, 'color', 'w');
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'p.Normalised_for_NL', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-            set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-            saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'p.Normalised_for_NL', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-         
-            %% error bars
-            y = 1 * STA;
-            STA_error = std(y(length(y) / 2 + 1:end)) / sqrt(p.tKerLen);
-            STA_error = STA_error * ones(length(y), 1);
-            frame = 1 / (count_TTL / p.trial_length_in_secs);
-            x = (- (p.tKerLen)) * (frame) + .5 * frame:frame:p.tKerLen * frame - .5 * frame;
-            h = plot(x, y);
-            set(h, 'LineWidth', line_thickness)
-            baseline = (1 * mean(trial_estim_amps)) * ones(2 * p.tKerLen, 1);
-            hold on
-            plot(zeromarker, plt_ylim(1):.05:plt_ylim(2), 'k');
-            errorbar(x, baseline, STA_error, 'k')
-            zeromarker = zeros(length(plt_ylim(1):100:plt_ylim(2)));
-            hold on
-            set(gcf, 'color', 'w');
-            ylim([plt_ylim(1) plt_ylim(2)])
-            hold on
-            legend(['STA:spks = ', int2str(nspikes)], ['Mean Stimulus : ', int2str(p.stimFreq), 'Hz stm. frq. : 35% var '])
-         
-            %%
-            total_time = p.trial_length_in_secs * length(trials_to_use);
-            Frequency = nspikes / (length(p.first_trial:p.last_tiral) * p.trial_length_in_secs);
-            xlabel({'Time (sec)'})
-            ylabel('Mean Stimulus (mV)')
-            mousetype = ' C57Bl/6 (wt) ';
-         
-            figure_heading = strcat(p.year, p.cell_id, mousetype, ' FR = ', num2str(Frequency), ' Hz: ', num2str(total_time), ' sec : epiretinal', ' lock out is ', num2str(p.leave_out), 's', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes));
-            title(figure_heading)
-            set(gcf, 'name', fig_names)
-            if ~ exist(fname, 'dir'), mkdir(fname); end
-                ext = '.fig';
-                saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'error_bars_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), ext], 'fig');
-                set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
-                saveas(gcf, [fname, p.cell_id, num2str(p.leave_out), ' ', num2str(p.first_trial), 'to', num2str(p.last_tiral), '-', 'error_bars_norm_full', '-BTA is ', num2str(p.cardinal_STA_Only_Burst), 'WB is ', num2str(p.weighted_burst), 'Singleton is ', num2str(p.singleton_spikes), '.jpeg'], 'jpeg');
-            end
-            % STA parameter calculation
-            STA_parameters_significance(Frequency, fname, frame, STA, trial_estim_amps, p);% this the original implementation. notice how the last trials stimulus amplitude is passed to this function! 
-            % STC
-            if p.STC_Analysis
-                [V_inhibit V_excite Cov_Matrix Cov_Matrix_raw_stimulus mu sd] = STC_excitatory_parameters_significance(p.tKerLen, frame, STA, estim_amps, estim_times, p.cell_id, p.year, p.cardinal_STA_Only_Burst);
-                %  [V_inhibit Cov_Matrix Cov_Matrix_raw_stimulus estim_amps] = STC_inhibitory_parameters_significance(p.tKerLen, frame, STA, estim_amps, estim_times, p.cell_id, p.year, p.cardinal_STA_Only_Burst, mu, sd);
-            else
-                V_excite = 0;
-                V_inhibit = 0;
-                Cov_Matrix = 0;
-                Cov_Matrix_raw_stimulus = 0;
-            end
+
+saveas(gcf, [p.work_dir, fig_basename,'_STA plot.fig']);
+saveas(gcf, [p.work_dir, fig_basename, '_STA plot.jpeg']);
+
+%% Plot 2: STA with error bars - ToDo: write STA with errorbars again IMHO code was either extremely complex written or not correct for their intented purpose
+% STA_error = std(STA(length(STA) / 2 + 1:end)) / sqrt(p.tKerLen);
+% STA_error = STA_error * ones(length(STA), 1);
+% errorbar(STA_t, estim_meanline, STA_error, 'k')
+
+STA_parameters_significance(p.stimFreq, p.work_dir, stimPeriod, STA, trial_estim_amps, p);
+% this the original implementation. notice how the last trials stimulus amplitude is passed to this function! 
+
+% STC
+if p.STC_Analysis
+    [V_inhibit V_excite Cov_Matrix Cov_Matrix_raw_stimulus mu sd] = STC_excitatory_parameters_significance(p.tKerLen, stimPeriod, STA, estim_amps, estim_times, p.cell_id, p.year, p.cardinal_STA_Only_Burst);
+    %  [V_inhibit Cov_Matrix Cov_Matrix_raw_stimulus estim_amps] = STC_inhibitory_parameters_significance(p.tKerLen, stimPeriod, STA, estim_amps, estim_times, p.cell_id, p.year, p.cardinal_STA_Only_Burst, mu, sd);
+else
+    V_excite = 0;
+    V_inhibit = 0;
+    Cov_Matrix = 0;
+    Cov_Matrix_raw_stimulus = 0;
+end
+
 end
         
 function trial_estim_amps = get_estim_amp(textdata, Normalize)
