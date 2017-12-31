@@ -216,7 +216,9 @@ saveas(gcf, [p.work_dir, fig_basename, '_STA plot.jpeg']);
 % STA_error = STA_error * ones(length(STA), 1);
 % errorbar(STA_t, estim_meanline, STA_error, 'k')
 
-STA_parameters_significance(p.stimFreq, p.work_dir, stimPeriod, STA, trial_estim_amps, p);
+%% STA significance computation
+STA_parameters_significance(STA, STA_t, trial_estim_amps, p);
+%STA_parameters_significance(single_pulse_corrected_STA, csSTA, STA_t, csSTA_t, trial_estim_amps, p);
 % this the original implementation. notice how the last trials stimulus amplitude is passed to this function! 
 
 % STC
