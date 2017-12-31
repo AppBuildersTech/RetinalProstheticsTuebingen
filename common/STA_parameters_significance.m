@@ -1,5 +1,4 @@
-function STA_parameters_significance(STA, STA_t, Stim, p)
-%function STA_parameters_significance(STA, csSTA, STA_t, csSTA_t, estim_amps, p)
+function STA_parameters_significance(STA, STA_t, correctedSTA, splinedSTA, splinedSTA_t, trial_estim_amps, estim_meanline, p)
 
 % This function calculates calculates parameters like location of peak & trough of STA and the
 % integration window of peak and integration window of trough
@@ -7,7 +6,7 @@ function STA_parameters_significance(STA, STA_t, Stim, p)
 % the integration window of peak and width of integration windown of trough
 % STA calls this function
 
-% estim_amps is the stimulus of the last stimulus trial. It is used calculate baseline mean and variance which later are used for significance calculation later.
+% estim_amps is the stimulus of the last stimulus trial. It is used calculate estim_meanline mean and variance which later are used for significance calculation later.
 
 stimPeriod = 1/p.stimFreq;
 
@@ -19,25 +18,6 @@ end
 
 %% cubic splined sta
 
-correctedSTA = STA;
-splinedSTA_t = STA_t(1):.001:STA_t(end);
-if p.single_pulse_activation_correction
-    
-    correctedSTA(length(STA) / 2) = mean(Stim);
-    
-end
-splinedSTA = spline(STA_t, correctedSTA, splinedSTA_t);
-figure
-plot(splinedSTA_t, splinedSTA, 'LineWidth', 2)
-ylim([plt_ylim(1) plt_ylim(2)])
-set(gcf, 'color', 'w');
-baseline = (1 * mean(Stim)) * ones(length(splinedSTA), 1);
-
-hold on
-plot(splinedSTA_t, baseline, 'k')
-step_size = (plt_ylim(2) - plt_ylim(1)) / 10;
-zeromarker = zeros(length(plt_ylim(1):step_size:plt_ylim(2)));
-plot(zeromarker, plt_ylim(1):step_size:plt_ylim(2), 'k');
 
 %% significance of peak and trough of STA
 
@@ -91,7 +71,7 @@ end
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 if H_peak == 1
     
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
     i_zerocrossing = (locs(find(locs == peak_location)));
     j_zerocrossing = (locs(find(locs == peak_location)));
     i_peak = i_zerocrossing;
@@ -104,7 +84,7 @@ end
 
 if H_trough == 1
     
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
     i_zerocrossing = (locs(find(locs == trough_location)));
     j_zerocrossing = (locs(find(locs == trough_location)));
     i_trough = i_zerocrossing;
@@ -117,14 +97,14 @@ end
 
 if (i_peak > i_trough)
     
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
     i_zerocrossing = (locs(find(locs == peak_location)));
     j_zerocrossing = (locs(find(locs == peak_location)));
     
     i_sig = i_zerocrossing;
     j_sig = j_zerocrossing;
     
-    while (splinedSTA(i_zerocrossing) < mean(Stim))
+    while (splinedSTA(i_zerocrossing) < mean(trial_estim_amps))
         
         i_zerocrossing = i_zerocrossing - 1;
         if (i_zerocrossing == 0)
@@ -134,7 +114,7 @@ if (i_peak > i_trough)
         
     end
     
-    while ((splinedSTA(i_sig) < mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
         
         i_sig = i_sig - 1;
         if (i_sig == 0)
@@ -148,7 +128,7 @@ if (i_peak > i_trough)
     hold on
     plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
     
-    while (splinedSTA(j_zerocrossing) < mean(Stim))
+    while (splinedSTA(j_zerocrossing) < mean(trial_estim_amps))
         j_zerocrossing = j_zerocrossing + 1;
         if (j_zerocrossing > length(splinedSTA) / 2)
             break;
@@ -156,7 +136,7 @@ if (i_peak > i_trough)
         
     end
     
-    while ((splinedSTA(j_sig) < mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
         
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
@@ -184,7 +164,7 @@ if (i_peak > i_trough)
     i_zerocrossing_rebound = i_zerocrossing;
     j_zerocrossing_rebound_end = i_zerocrossing_rebound;
     
-    while (splinedSTA(i_zerocrossing_rebound) > mean(Stim))
+    while (splinedSTA(i_zerocrossing_rebound) > mean(trial_estim_amps))
         i_zerocrossing_rebound = i_zerocrossing_rebound - 1;
         if (i_zerocrossing_rebound == 1)
             break;
@@ -230,13 +210,13 @@ if (i_peak > i_trough)
     
     if H_trough == 1
         
-        locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+        locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
         i_zerocrossing = (locs(find(locs == trough_location)));
         j_zerocrossing = (locs(find(locs == trough_location)));
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) > mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+        while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
             
             i_sig = i_sig - 1;
             if (i_sig == 0)
@@ -247,7 +227,7 @@ if (i_peak > i_trough)
             
         end
         
-        while ((splinedSTA(j_sig) > mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+        while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
             
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
@@ -270,13 +250,13 @@ if (i_peak > i_trough)
     
 elseif (i_peak < i_trough)
     
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
     i_zerocrossing = (locs(find(locs == trough_location)));
     j_zerocrossing = (locs(find(locs == trough_location)));
     i_sig = i_zerocrossing;
     j_sig = j_zerocrossing;
     
-    while (splinedSTA(i_zerocrossing) > mean(Stim))
+    while (splinedSTA(i_zerocrossing) > mean(trial_estim_amps))
         
         i_zerocrossing = i_zerocrossing - 1;
         
@@ -288,7 +268,7 @@ elseif (i_peak < i_trough)
         
     end
     
-    while ((splinedSTA(i_sig) > mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
         
         i_sig = i_sig - 1;
         if (i_sig == 0)
@@ -302,14 +282,14 @@ elseif (i_peak < i_trough)
     hold on
     plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
     
-    while (splinedSTA(j_zerocrossing) > mean(Stim))
+    while (splinedSTA(j_zerocrossing) > mean(trial_estim_amps))
         j_zerocrossing = j_zerocrossing + 1;
         if (j_zerocrossing > length(splinedSTA) / 2)
             break;
         end
     end
     
-    while ((splinedSTA(j_sig) > mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
         
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
@@ -336,7 +316,7 @@ elseif (i_peak < i_trough)
     i_zerocrossing_rebound = i_zerocrossing;
     j_zerocrossing_rebound_end = i_zerocrossing_rebound;
     
-    while (splinedSTA(i_zerocrossing_rebound) < mean(Stim))
+    while (splinedSTA(i_zerocrossing_rebound) < mean(trial_estim_amps))
         i_zerocrossing_rebound = i_zerocrossing_rebound - 1;
         if (i_zerocrossing_rebound == 1)
             break;
@@ -383,13 +363,13 @@ elseif (i_peak < i_trough)
     
     if H_peak == 1
         
-        locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+        locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
         i_zerocrossing = (locs(find(locs == peak_location)));
         j_zerocrossing = (locs(find(locs == peak_location)));
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) < mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
             
             i_sig = i_sig - 1;
             if (i_sig == 0)
@@ -400,7 +380,7 @@ elseif (i_peak < i_trough)
             
         end
         
-        while ((splinedSTA(j_sig) < mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
             
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
@@ -436,7 +416,7 @@ if ~ p.vstim
         if ((((peak_location_time < .04) && (H_peak == 1)) || (((trough_location_time < .04) && (H_trough == 1)))))
             disp('single pulse')
             
-            correctedSTA(25) = mean(baseline);
+            correctedSTA(25) = mean(estim_meanline);
             figure;
             title('check')
             splinedSTA = spline(STA_t, correctedSTA, splinedSTA_t);
@@ -444,9 +424,9 @@ if ~ p.vstim
             plot(splinedSTA_t, splinedSTA, 'LineWidth', 2)
             ylim([plt_ylim(1) plt_ylim(2)])
             set(gcf, 'color', 'w');
-            baseline = (1 * mean(Stim)) * ones(length(splinedSTA), 1);
+            estim_meanline = (1 * mean(trial_estim_amps)) * ones(length(splinedSTA), 1);
             hold on
-            plot(splinedSTA_t, baseline, 'k')
+            plot(splinedSTA_t, estim_meanline, 'k')
             step_size = (plt_ylim(2) - plt_ylim(1)) / 10;
             zeromarker = zeros(length(plt_ylim(1):step_size:plt_ylim(2)));
             plot(zeromarker, plt_ylim(1):step_size:plt_ylim(2), 'k');
@@ -503,7 +483,7 @@ if ~ p.vstim
             % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
             if H_peak == 1
                 
-                locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+                locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
                 i_zerocrossing = (locs(find(locs == peak_location)));
                 j_zerocrossing = (locs(find(locs == peak_location)));
                 i_peak = i_zerocrossing;
@@ -516,7 +496,7 @@ if ~ p.vstim
             
             if H_trough == 1
                 
-                locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+                locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
                 i_zerocrossing = (locs(find(locs == trough_location)));
                 j_zerocrossing = (locs(find(locs == trough_location)));
                 i_trough = i_zerocrossing;
@@ -529,14 +509,14 @@ if ~ p.vstim
             
             if (i_peak > i_trough)
                 
-                locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+                locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
                 i_zerocrossing = (locs(find(locs == peak_location)));
                 j_zerocrossing = (locs(find(locs == peak_location)));
                 
                 i_sig = i_zerocrossing;
                 j_sig = j_zerocrossing;
                 
-                while (splinedSTA(i_zerocrossing) < mean(Stim))
+                while (splinedSTA(i_zerocrossing) < mean(trial_estim_amps))
                     
                     i_zerocrossing = i_zerocrossing - 1;
                     if (i_zerocrossing == 0)
@@ -546,7 +526,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) < mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+                while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -560,7 +540,7 @@ if ~ p.vstim
                 hold on
                 plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
                 
-                while (splinedSTA(j_zerocrossing) < mean(Stim))
+                while (splinedSTA(j_zerocrossing) < mean(trial_estim_amps))
                     j_zerocrossing = j_zerocrossing + 1;
                     if (j_zerocrossing > length(splinedSTA) / 2)
                         break;
@@ -568,7 +548,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(j_sig) < mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+                while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -596,7 +576,7 @@ if ~ p.vstim
                 i_zerocrossing_rebound = i_zerocrossing;
                 j_zerocrossing_rebound_end = i_zerocrossing_rebound;
                 
-                while (splinedSTA(i_zerocrossing_rebound) > mean(Stim))
+                while (splinedSTA(i_zerocrossing_rebound) > mean(trial_estim_amps))
                     i_zerocrossing_rebound = i_zerocrossing_rebound - 1;
                     if (i_zerocrossing_rebound == 1)
                         break;
@@ -643,13 +623,13 @@ if ~ p.vstim
                 
                 if H_trough == 1
                     
-                    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+                    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
                     i_zerocrossing = (locs(find(locs == trough_location)));
                     j_zerocrossing = (locs(find(locs == trough_location)));
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) > mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+                    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -660,7 +640,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) > mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+                    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)
@@ -682,13 +662,13 @@ if ~ p.vstim
                 
             elseif (i_peak < i_trough)
                 
-                locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(Stim));
+                locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
                 i_zerocrossing = (locs(find(locs == trough_location)));
                 j_zerocrossing = (locs(find(locs == trough_location)));
                 i_sig = i_zerocrossing;
                 j_sig = j_zerocrossing;
                 
-                while (splinedSTA(i_zerocrossing) > mean(Stim))
+                while (splinedSTA(i_zerocrossing) > mean(trial_estim_amps))
                     
                     i_zerocrossing = i_zerocrossing - 1;
                     
@@ -700,7 +680,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) > mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+                while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -714,14 +694,14 @@ if ~ p.vstim
                 hold on
                 plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
                 
-                while (splinedSTA(j_zerocrossing) > mean(Stim))
+                while (splinedSTA(j_zerocrossing) > mean(trial_estim_amps))
                     j_zerocrossing = j_zerocrossing + 1;
                     if (j_zerocrossing > length(splinedSTA) / 2)
                         break;
                     end
                 end
                 
-                while ((splinedSTA(j_sig) > mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+                while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -748,7 +728,7 @@ if ~ p.vstim
                 i_zerocrossing_rebound = i_zerocrossing;
                 j_zerocrossing_rebound_end = i_zerocrossing_rebound;
                 
-                while (splinedSTA(i_zerocrossing_rebound) < mean(Stim))
+                while (splinedSTA(i_zerocrossing_rebound) < mean(trial_estim_amps))
                     i_zerocrossing_rebound = i_zerocrossing_rebound - 1;
                     if (i_zerocrossing_rebound == 1)
                         break;
@@ -795,13 +775,13 @@ if ~ p.vstim
                 
                 if H_peak == 1
                     
-                    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(Stim));
+                    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
                     i_zerocrossing = (locs(find(locs == peak_location)));
                     j_zerocrossing = (locs(find(locs == peak_location)));
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) < mean(Stim)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
+                    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), baseline_sta, std_baselines, alphaville))
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -812,7 +792,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) < mean(Stim)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
+                    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), baseline_sta, std_baselines, alphaville))
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)

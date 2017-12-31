@@ -180,7 +180,7 @@ STA = STA / nspikes; % Divides the Stimulus Sum/ Total Number of Spikes
 line_thickness = 2;
 
 STA_t = (0.5 - p.tKerLen)* stimPeriod:stimPeriod:(p.tKerLen  - .5)* stimPeriod;
-estim_mean = ceil(mean(mean(estim_amps)));
+estim_mean = mean(trial_estim_amps);%ceil(mean(mean(estim_amps)));
 estim_meanline = estim_mean * ones(2 * p.tKerLen, 1);
 total_trial_time = p.trial_length_in_secs * length(trials_to_use);
 mean_FR = nspikes / total_trial_time;
@@ -190,6 +190,8 @@ if p.Normalize == 1
 else
 	plt_ylim = [-1300, -300];
 end
+
+yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
 
 fig_basename = sprintf('[%s]_%s_%dto%d_FR=%2.3fHz_leave_out=%0.2fs_cSOB=%d_WB=%d_SS=%d',...
     p.cell_id,p.year,p.first_trial,p.last_trial,mean_FR,p.leave_out,p.cardinal_STA_Only_Burst,p.weighted_burst,p.singleton_spikes);
@@ -202,22 +204,44 @@ set(gcf, 'color', 'w');
 plot(STA_t, STA,'LineWidth', line_thickness);hold on;
 plot(STA_t, estim_meanline, 'k');
 
-yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
 plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
 
 title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)])
 
-saveas(gcf, [p.work_dir, fig_basename,'_STA plot.fig']);
-saveas(gcf, [p.work_dir, fig_basename, '_STA plot.jpeg']);
+saveas(gcf, [p.work_dir, fig_basename,'_STA.fig']);
+saveas(gcf, [p.work_dir, fig_basename, '_STA.jpeg']);
 
 %% Plot 2: STA with error bars - ToDo: write STA with errorbars again IMHO code was either extremely complex written or not correct for their intented purpose
 % STA_error = std(STA(length(STA) / 2 + 1:end)) / sqrt(p.tKerLen);
 % STA_error = STA_error * ones(length(STA), 1);
-% errorbar(STA_t, estim_meanline, STA_error, 'k')
+% errorbar(STA_t, estim_meanline, STA_error, 'k')7
+
+%% Plot 3 - splined STA
+
+correctedSTA = STA;
+splinedSTA_t = STA_t(1):.001:STA_t(end);
+if p.single_pulse_activation_correction
+    correctedSTA(length(STA) / 2) = mean(trial_estim_amps);
+end
+splinedSTA = spline(STA_t, correctedSTA, splinedSTA_t);
+figure
+set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
+set(gcf, 'color', 'w');
+
+plot(splinedSTA_t, splinedSTA,'LineWidth', line_thickness);hold on;
+plot(STA_t, estim_meanline, 'k');
+
+plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
+
+title(fig_basename, 'Interpreter', 'none')
+ylim([plt_ylim(1) plt_ylim(2)])
+
+saveas(gcf, [p.work_dir, fig_basename,'_splinedSTA.fig']);
+saveas(gcf, [p.work_dir, fig_basename, '_splinedSTA.jpeg']);
 
 %% STA significance computation
-STA_parameters_significance(STA, STA_t, trial_estim_amps, p);
+STA_parameters_significance(STA, STA_t,correctedSTA,splinedSTA,splinedSTA_t, trial_estim_amps, estim_meanline, p);
 %STA_parameters_significance(single_pulse_corrected_STA, csSTA, STA_t, csSTA_t, trial_estim_amps, p);
 % this the original implementation. notice how the last trials stimulus amplitude is passed to this function! 
 
