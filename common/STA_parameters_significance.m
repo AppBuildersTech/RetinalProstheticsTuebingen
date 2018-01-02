@@ -32,7 +32,7 @@ trough_sta = max(STA(1:length(STA) / 2));
 %% Location of peak and trough and their values
 
 [peak_val, peak_loc] = min(splinedSTA(1:(length(splinedSTA) / 2)));
-[through_val, trough_loc] = max(splinedSTA(1:length(splinedSTA) / 2));
+[trough_val, trough_loc] = max(splinedSTA(1:length(splinedSTA) / 2));
 
 if ~ p.vstim
     trough_location_time = abs(splinedSTA_t(1) + (trough_loc -1)*.001);
@@ -379,13 +379,13 @@ if ~ p.vstim
                 
             end
             
-            % through_val = max(splinedSTA(length(splinedSTA)/4:length(splinedSTA)/2));
-            through_val = max(splinedSTA(1:length(splinedSTA) / 2));
+            % trough_val = max(splinedSTA(length(splinedSTA)/4:length(splinedSTA)/2));
+            trough_val = max(splinedSTA(1:length(splinedSTA) / 2));
             
             baseline_avg_right = mean(splinedSTA(1 + (length(splinedSTA) / 2):length(splinedSTA)));
             baseline_std_right = std(splinedSTA(1 + (length(splinedSTA) / 2):length(splinedSTA)));
             
-            trough_loc = find(splinedSTA(1:length(splinedSTA) / 2) == through_val);
+            trough_loc = find(splinedSTA(1:length(splinedSTA) / 2) == trough_val);
             peak_loc = find(splinedSTA(1:length(splinedSTA) / 2) == peak_val);
             
             if ~ p.vstim
@@ -837,12 +837,12 @@ end
 if p.vstim
     
     temp_store = peak_val;
-    peak_val = through_val;
-    through_val = temp_store;
+    peak_val = trough_val;
+    trough_val = temp_store;
     
 end
 
 if ~ exist(p.work_dir, 'dir'), mkdir(p.work_dir); end
-save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'peak_val', 'through_val', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
+save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'peak_val', 'trough_val', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
 
 end
