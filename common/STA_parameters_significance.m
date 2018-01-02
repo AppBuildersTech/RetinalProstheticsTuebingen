@@ -21,13 +21,13 @@ end
 STA_mean = mean(STA(length(STA) / 2 + 1:end));
 STA_std = std(STA(length(STA) / 2 + 1:end));
 
-alphaville = (1 - nthroot(.95, p.tKerLen))/2;
+alpha_value = (1 - nthroot(.95, p.tKerLen))/2;
 
 peak_sta = min(STA(1:length(STA) / 2));
 trough_sta = max(STA(1:length(STA) / 2));
 
-[h_peak, ~] = ztest(peak_sta, STA_mean, STA_std, alphaville);
-[h_trough, ~] = ztest(trough_sta, STA_mean, STA_std, alphaville);
+[h_peak, ~] = ztest(peak_sta, STA_mean, STA_std, 'Alpha',alpha_value);
+[h_trough, ~] = ztest(trough_sta, STA_mean, STA_std, 'Alpha', alpha_value);
 
 %% Location of peak and trough and their values
 
@@ -75,7 +75,7 @@ if (i_peak > i_trough)
         end
     end
     
-    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
         i_sig = i_sig - 1;
         if (i_sig == 0)
             i_sig = 1;
@@ -95,7 +95,7 @@ if (i_peak > i_trough)
         
     end
     
-    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
             break;
@@ -133,7 +133,7 @@ if (i_peak > i_trough)
     
     trough_amp_rebound = max(splinedSTA(i_zerocrossing_rebound:j_zerocrossing_rebound_end));
     
-    [H_trough_rebound P_trough_rebound] = ztest(trough_amp_rebound, STA_mean, STA_std, alphaville);
+    [H_trough_rebound P_trough_rebound] = ztest(trough_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
     
     if H_trough_rebound
         
@@ -166,7 +166,7 @@ if (i_peak > i_trough)
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+        while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
             i_sig = i_sig - 1;
             if (i_sig == 0)
                 
@@ -175,7 +175,7 @@ if (i_peak > i_trough)
             end
         end
         
-        while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+        while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
                 break;
@@ -209,7 +209,7 @@ elseif (i_peak < i_trough)
         end
     end
     
-    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
         i_sig = i_sig - 1;
         if (i_sig == 0)
             i_sig = 1;
@@ -228,7 +228,7 @@ elseif (i_peak < i_trough)
         end
     end
     
-    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
             break;
@@ -266,7 +266,7 @@ elseif (i_peak < i_trough)
     
     peak_amp_rebound = min(splinedSTA(i_zerocrossing_rebound:j_zerocrossing_rebound_end));
     
-    [H_peak_rebound P_peak_rebound] = ztest(peak_amp_rebound, STA_mean, STA_std, alphaville);
+    [H_peak_rebound P_peak_rebound] = ztest(peak_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
     
     if H_peak_rebound
         
@@ -299,7 +299,7 @@ elseif (i_peak < i_trough)
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
             i_sig = i_sig - 1;
             if (i_sig == 0)
                 i_sig = 1;
@@ -307,7 +307,7 @@ elseif (i_peak < i_trough)
             end
         end
         
-        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
                 break;
@@ -357,15 +357,15 @@ if ~ p.vstim
             STA_mean = mean(STA(length(STA) / 2 + 1:end));
             STA_std = std(STA(length(STA) / 2 + 1:end));
             
-            alphaville = 1 - nthroot(.95, p.tKerLen);
+            alpha_value = 1 - nthroot(.95, p.tKerLen);
             
-            alphaville = alphaville / 2;
+            alpha_value = alpha_value / 2;
             
             peak_sta = min(STA(1:length(STA) / 2));
-            [h_peak P_peak] = ztest(peak_sta, STA_mean, STA_std, alphaville);
+            [h_peak P_peak] = ztest(peak_sta, STA_mean, STA_std, 'Alpha',alpha_value);
             
             trough_sta = max(STA(1:length(STA) / 2));
-            [h_trough P_trough] = ztest(trough_sta, STA_mean, STA_std, alphaville);
+            [h_trough P_trough] = ztest(trough_sta, STA_mean, STA_std, 'Alpha',alpha_value);
             
             %% Location of peak and trough and their values
             
@@ -447,7 +447,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+                while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -469,7 +469,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+                while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -509,7 +509,7 @@ if ~ p.vstim
                 
                 trough_amp_rebound = max(splinedSTA(i_zerocrossing_rebound:j_zerocrossing_rebound_end));
                 
-                [H_trough_rebound P_trough_rebound] = ztest(trough_amp_rebound, STA_mean, STA_std, alphaville);
+                [H_trough_rebound P_trough_rebound] = ztest(trough_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
                 
                 if H_trough_rebound
                     
@@ -550,7 +550,7 @@ if ~ p.vstim
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+                    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -561,7 +561,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+                    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)
@@ -601,7 +601,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+                while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -622,7 +622,7 @@ if ~ p.vstim
                     end
                 end
                 
-                while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+                while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -661,7 +661,7 @@ if ~ p.vstim
                 
                 peak_amp_rebound = min(splinedSTA(i_zerocrossing_rebound:j_zerocrossing_rebound_end));
                 
-                [H_peak_rebound P_peak_rebound] = ztest(peak_amp_rebound, STA_mean, STA_std, alphaville);
+                [H_peak_rebound P_peak_rebound] = ztest(peak_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
                 
                 if H_peak_rebound
                     
@@ -702,7 +702,7 @@ if ~ p.vstim
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, alphaville))
+                    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -713,7 +713,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, alphaville))
+                    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)
