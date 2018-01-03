@@ -16,53 +16,49 @@ else
     plt_ylim = [-1300, -300];
 end
 
-%% Significance of peak and trough of STA
+%% Significance of the STA peak and trough
 
 STA_mean = mean(STA(length(STA) / 2 + 1:end));
 STA_std = std(STA(length(STA) / 2 + 1:end));
 
 alpha_value = (1 - nthroot(.95, p.tKerLen))/2;
 
-peak_sta = min(STA(1:length(STA) / 2));
-trough_sta = max(STA(1:length(STA) / 2));
+[~, STA_peak_idx] = max(abs(STA(1:length(STA) / 2)));
+[~, STA_trough_idx] = min(abs(STA(1:length(STA) / 2)));
+STA_peak_val = STA(STA_peak_idx);
+STA_trough_val = STA(STA_trough_idx);
 
-[h_peak, ~] = ztest(peak_sta, STA_mean, STA_std, 'Alpha',alpha_value);
-[h_trough, ~] = ztest(trough_sta, STA_mean, STA_std, 'Alpha', alpha_value);
+[STA_peak_issig, ~] = ztest(STA_peak_val, STA_mean, STA_std, 'Alpha',alpha_value); % h = 1 means an outlier, and we want an outlier
+[STA_through_issig, ~] = ztest(STA_trough_val, STA_mean, STA_std, 'Alpha', alpha_value);
 
-%% Location of peak and trough and their values
+%% Location of the peak and the trough and their values
 
-[peak_val, peak_loc] = min(splinedSTA(1:(length(splinedSTA) / 2)));
-[trough_val, trough_loc] = max(splinedSTA(1:length(splinedSTA) / 2));
+% [splinedSTA_peak_val, splinedSTA_peak_idx] = min(splinedSTA(1:(length(splinedSTA) / 2)));
+% [splinedSTA_trough_val, splinedSTA_trough_idx] = max(splinedSTA(1:length(splinedSTA) / 2));
+
+[~, splinedSTA_peak_idx] = max(abs(splinedSTA(1:length(splinedSTA) / 2)));
+[~, splinedSTA_trough_idx] = min(abs(splinedSTA(1:length(splinedSTA) / 2)));
+splinedSTA_peak_val = splinedSTA(splinedSTA_peak_idx);
+splinedSTA_trough_val = splinedSTA(splinedSTA_trough_idx);
 
 if ~ p.vstim
-    trough_location_time = abs(splinedSTA_t(1) + (trough_loc -1)*.001);
-    peak_location_time = abs(splinedSTA_t(1) + (peak_loc  - 1)*.001);
+    trough_location_time = abs(splinedSTA_t(1) + (splinedSTA_trough_idx -1)*.001);
+    peak_location_time = abs(splinedSTA_t(1) + (splinedSTA_peak_idx  - 1)*.001);
 elseif p.vstim
-    trough_location_time = abs(splinedSTA_t(1) + (peak_loc -1)*.001);
-    peak_location_time = abs(splinedSTA_t(1) + (trough_loc  - 1)*.001);
+    trough_location_time = abs(splinedSTA_t(1) + (splinedSTA_peak_idx -1)*.001);
+    peak_location_time = abs(splinedSTA_t(1) + (splinedSTA_trough_idx  - 1)*.001);
 end
 
 %% integration time calculation peak
 
-if h_peak
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-    i_peak = locs(locs == peak_loc);
-else
-    i_peak = - 1000;
-end
+if ~STA_peak_issig; splinedSTA_peak_idx = - 1000; end % if peak is not an outlier
+if ~STA_through_issig; splinedSTA_trough_idx = - 1000; end
 
-if h_trough
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-    i_trough = locs(locs == trough_loc);
-else
-    i_trough = - 1000;
-end
-
-if (i_peak > i_trough)
+if (splinedSTA_peak_idx > splinedSTA_trough_idx)
     
     locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-    i_zerocrossing = locs(locs == peak_loc);
-    j_zerocrossing = locs(locs == peak_loc);
+    i_zerocrossing = locs(locs == splinedSTA_peak_idx);
+    j_zerocrossing = locs(locs == splinedSTA_peak_idx);
     
     i_sig = i_zerocrossing;
     j_sig = j_zerocrossing;
@@ -75,7 +71,7 @@ if (i_peak > i_trough)
         end
     end
     
-    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
         i_sig = i_sig - 1;
         if (i_sig == 0)
             i_sig = 1;
@@ -95,7 +91,7 @@ if (i_peak > i_trough)
         
     end
     
-    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
             break;
@@ -158,15 +154,15 @@ if (i_peak > i_trough)
         end
     end
     
-    if h_trough == 1
+    if STA_through_issig == 1
         
         locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-        i_zerocrossing = (locs(find(locs == trough_loc)));
-        j_zerocrossing = (locs(find(locs == trough_loc)));
+        i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+        j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+        while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
             i_sig = i_sig - 1;
             if (i_sig == 0)
                 
@@ -175,7 +171,7 @@ if (i_peak > i_trough)
             end
         end
         
-        while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+        while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
                 break;
@@ -192,11 +188,11 @@ if (i_peak > i_trough)
         trough_Integration_time_sig = 0;
     end
     
-elseif (i_peak < i_trough)
+elseif (splinedSTA_peak_idx < splinedSTA_trough_idx)
     
     locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-    i_zerocrossing = (locs(find(locs == trough_loc)));
-    j_zerocrossing = (locs(find(locs == trough_loc)));
+    i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+    j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
     
     i_sig = i_zerocrossing;
     j_sig = j_zerocrossing;
@@ -209,7 +205,7 @@ elseif (i_peak < i_trough)
         end
     end
     
-    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
         i_sig = i_sig - 1;
         if (i_sig == 0)
             i_sig = 1;
@@ -228,7 +224,7 @@ elseif (i_peak < i_trough)
         end
     end
     
-    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
         j_sig = j_sig + 1;
         if (j_sig > length(splinedSTA) / 2)
             break;
@@ -291,15 +287,15 @@ elseif (i_peak < i_trough)
         end
     end
     
-    if h_peak == 1
+    if STA_peak_issig == 1
         
         locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-        i_zerocrossing = (locs(find(locs == peak_loc)));
-        j_zerocrossing = (locs(find(locs == peak_loc)));
+        i_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
+        j_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
         i_sig = i_zerocrossing;
         j_sig = j_zerocrossing;
         
-        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
             i_sig = i_sig - 1;
             if (i_sig == 0)
                 i_sig = 1;
@@ -307,7 +303,7 @@ elseif (i_peak < i_trough)
             end
         end
         
-        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
             j_sig = j_sig + 1;
             if (j_sig > length(splinedSTA) / 2)
                 break;
@@ -323,7 +319,7 @@ elseif (i_peak < i_trough)
         peak_Integration_time_sig = 0;
     end
     
-elseif (i_peak == i_trough)
+elseif (splinedSTA_peak_idx == splinedSTA_trough_idx)
     peak_Integration_time = 0;
     trough_Integration_time = 0;
 end
@@ -334,7 +330,7 @@ if ~ p.vstim
     
     if p.single_pulse_activation_correction
         
-        if ((((peak_location_time < .04) && (h_peak == 1)) || (((trough_location_time < .04) && (h_trough == 1)))))
+        if ((((peak_location_time < .04) && (STA_peak_issig == 1)) || (((trough_location_time < .04) && (STA_through_issig == 1)))))
             disp('single pulse')
             
             correctedSTA(25) = mean(estim_meanline);
@@ -361,78 +357,78 @@ if ~ p.vstim
             
             alpha_value = alpha_value / 2;
             
-            peak_sta = min(STA(1:length(STA) / 2));
-            [h_peak P_peak] = ztest(peak_sta, STA_mean, STA_std, 'Alpha',alpha_value);
+            STA_peak_val = min(STA(1:length(STA) / 2));
+            [STA_peak_issig P_peak] = ztest(STA_peak_val, STA_mean, STA_std, 'Alpha',alpha_value);
             
-            trough_sta = max(STA(1:length(STA) / 2));
-            [h_trough P_trough] = ztest(trough_sta, STA_mean, STA_std, 'Alpha',alpha_value);
+            STA_trough_val = max(STA(1:length(STA) / 2));
+            [STA_through_issig P_trough] = ztest(STA_trough_val, STA_mean, STA_std, 'Alpha',alpha_value);
             
             %% Location of peak and trough and their values
             
             if ~ p.vstim
                 
-                peak_val = min(splinedSTA(1:(length(splinedSTA) / 2)));
+                splinedSTA_peak_val = min(splinedSTA(1:(length(splinedSTA) / 2)));
                 
             elseif p.vstim
                 
-                peak_val = min(splinedSTA(1:(length(splinedSTA) / 2)));
+                splinedSTA_peak_val = min(splinedSTA(1:(length(splinedSTA) / 2)));
                 
             end
             
             % trough_val = max(splinedSTA(length(splinedSTA)/4:length(splinedSTA)/2));
-            trough_val = max(splinedSTA(1:length(splinedSTA) / 2));
+            splinedSTA_trough_val = max(splinedSTA(1:length(splinedSTA) / 2));
             
             baseline_avg_right = mean(splinedSTA(1 + (length(splinedSTA) / 2):length(splinedSTA)));
             baseline_std_right = std(splinedSTA(1 + (length(splinedSTA) / 2):length(splinedSTA)));
             
-            trough_loc = find(splinedSTA(1:length(splinedSTA) / 2) == trough_val);
-            peak_loc = find(splinedSTA(1:length(splinedSTA) / 2) == peak_val);
+            splinedSTA_trough_idx = find(splinedSTA(1:length(splinedSTA) / 2) == splinedSTA_trough_val);
+            splinedSTA_peak_idx = find(splinedSTA(1:length(splinedSTA) / 2) == splinedSTA_peak_val);
             
             if ~ p.vstim
-                trough_location_time = abs(splinedSTA_t(1) + trough_loc * .001 - .001);
-                peak_location_time = abs(splinedSTA_t(1) + peak_loc * .001 - .001);
+                trough_location_time = abs(splinedSTA_t(1) + splinedSTA_trough_idx * .001 - .001);
+                peak_location_time = abs(splinedSTA_t(1) + splinedSTA_peak_idx * .001 - .001);
                 
             elseif p.vstim
                 
-                trough_location_time = abs(splinedSTA_t(1) + peak_loc * .001 - .001);
-                peak_location_time = abs(splinedSTA_t(1) + trough_loc * .001 - .001);
+                trough_location_time = abs(splinedSTA_t(1) + splinedSTA_peak_idx * .001 - .001);
+                peak_location_time = abs(splinedSTA_t(1) + splinedSTA_trough_idx * .001 - .001);
                 
             end
             
             %% integration time calculation peak
             
             % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
-            if h_peak == 1
+            if STA_peak_issig == 1
                 
                 locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-                i_zerocrossing = (locs(find(locs == peak_loc)));
-                j_zerocrossing = (locs(find(locs == peak_loc)));
-                i_peak = i_zerocrossing;
+                i_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
+                j_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
+                splinedSTA_peak_idx = i_zerocrossing;
                 
             else
                 
-                i_peak = - 1000;
+                splinedSTA_peak_idx = - 1000;
                 
             end
             
-            if h_trough == 1
+            if STA_through_issig == 1
                 
                 locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-                i_zerocrossing = (locs(find(locs == trough_loc)));
-                j_zerocrossing = (locs(find(locs == trough_loc)));
-                i_trough = i_zerocrossing;
+                i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+                j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+                splinedSTA_trough_idx = i_zerocrossing;
                 
             else
                 
-                i_trough = - 1000;
+                splinedSTA_trough_idx = - 1000;
                 
             end
             
-            if (i_peak > i_trough)
+            if (splinedSTA_peak_idx > splinedSTA_trough_idx)
                 
                 locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-                i_zerocrossing = (locs(find(locs == peak_loc)));
-                j_zerocrossing = (locs(find(locs == peak_loc)));
+                i_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
+                j_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
                 
                 i_sig = i_zerocrossing;
                 j_sig = j_zerocrossing;
@@ -447,7 +443,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -469,7 +465,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -542,15 +538,15 @@ if ~ p.vstim
                     
                 end
                 
-                if h_trough == 1
+                if STA_through_issig == 1
                     
                     locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-                    i_zerocrossing = (locs(find(locs == trough_loc)));
-                    j_zerocrossing = (locs(find(locs == trough_loc)));
+                    i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+                    j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -561,7 +557,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)
@@ -581,11 +577,11 @@ if ~ p.vstim
                     
                 end
                 
-            elseif (i_peak < i_trough)
+            elseif (splinedSTA_peak_idx < splinedSTA_trough_idx)
                 
                 locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-                i_zerocrossing = (locs(find(locs == trough_loc)));
-                j_zerocrossing = (locs(find(locs == trough_loc)));
+                i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
+                j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
                 i_sig = i_zerocrossing;
                 j_sig = j_zerocrossing;
                 
@@ -601,7 +597,7 @@ if ~ p.vstim
                     
                 end
                 
-                while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                     
                     i_sig = i_sig - 1;
                     if (i_sig == 0)
@@ -622,7 +618,7 @@ if ~ p.vstim
                     end
                 end
                 
-                while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                     
                     j_sig = j_sig + 1;
                     if (j_sig > length(splinedSTA) / 2)
@@ -694,15 +690,15 @@ if ~ p.vstim
                     
                 end
                 
-                if h_peak == 1
+                if STA_peak_issig == 1
                     
                     locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-                    i_zerocrossing = (locs(find(locs == peak_loc)));
-                    j_zerocrossing = (locs(find(locs == peak_loc)));
+                    i_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
+                    j_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
                     i_sig = i_zerocrossing;
                     j_sig = j_zerocrossing;
                     
-                    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                    while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                         
                         i_sig = i_sig - 1;
                         if (i_sig == 0)
@@ -713,7 +709,7 @@ if ~ p.vstim
                         
                     end
                     
-                    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)
+                    while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
                         
                         j_sig = j_sig + 1;
                         if (j_sig > length(splinedSTA) / 2)
@@ -733,7 +729,7 @@ if ~ p.vstim
                     
                 end
                 
-            elseif (i_peak == i_trough)
+            elseif (splinedSTA_peak_idx == splinedSTA_trough_idx)
                 
                 peak_Integration_time = 0;
                 trough_Integration_time = 0;
@@ -836,13 +832,13 @@ end
 
 if p.vstim
     
-    temp_store = peak_val;
-    peak_val = trough_val;
-    trough_val = temp_store;
+    temp_store = splinedSTA_peak_val;
+    splinedSTA_peak_val = splinedSTA_trough_val;
+    splinedSTA_trough_val = temp_store;
     
 end
 
 if ~ exist(p.work_dir, 'dir'), mkdir(p.work_dir); end
-save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'peak_val', 'trough_val', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
+save(file_loc, 'peak_location_time', 'trough_location_time', 'cell_type', 'STA_peak_val', 'STA_trough_val', 'peak_Integration_time_zero_crossing', 'trough_Integration_time_zero_crossing', 'peak_Integration_time_sig', 'trough_Integration_time_sig', 'peak_location_time_rebound', 'trough_location_time_rebound')
 
 end
