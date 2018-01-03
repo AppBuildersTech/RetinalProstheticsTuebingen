@@ -54,7 +54,70 @@ end
 if ~STA_peak_issig; splinedSTA_peak_idx = - 1000; end % if peak is not an outlier
 if ~STA_through_issig; splinedSTA_trough_idx = - 1000; end
 
-if (splinedSTA_peak_idx > splinedSTA_trough_idx)
+if (splinedSTA_peak_idx < splinedSTA_trough_idx)
+        
+    for i_zerocrossing = splinedSTA_trough_idx:-1:1%(splinedSTA(i_zerocrossing) > mean(trial_estim_amps))
+        if ~(splinedSTA(i_zerocrossing) > mean(trial_estim_amps)); break; end
+    end
+
+    for i_sig = splinedSTA_trough_idx:-1:1
+        if ~((splinedSTA(i_sig) > mean(trial_estim_amps))&& ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value)); break; end
+    end
+
+    plot(STA_t(1) - .001 + (i_zerocrossing * .001), splinedSTA(i_zerocrossing), 'ok', 'LineWidth', 2)
+    hold on
+    plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
+    
+    for j_zerocrossing = splinedSTA_trough_idx:(length(splinedSTA) / 2)+1 % BUG: the previous code counted always one more than the 
+        if ~(splinedSTA(j_zerocrossing) >= mean(trial_estim_amps)); break; end
+    end
+    
+    for j_sig = splinedSTA_trough_idx:(length(splinedSTA) / 2)+1 % BUG: the previous code counted always one more than the 
+        if ~((splinedSTA(j_sig) > mean(trial_estim_amps))&& ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value)); break; end
+    end
+    
+    plot(STA_t(1) - .001 + (j_zerocrossing * .001), splinedSTA(j_zerocrossing), 'ok', 'LineWidth', 2)
+    hold on
+    plot(STA_t(1) - .001 + (j_sig * .001), splinedSTA(j_sig), 'or', 'LineWidth', 2)
+    
+    if ~ p.vstim
+        trough_Integration_time = (j_zerocrossing - i_zerocrossing) * .001;
+        trough_Integration_time_sig = (j_sig - i_sig) * .001;
+	else        
+        peak_Integration_time = (j_zerocrossing - i_zerocrossing) * .001;
+        peak_Integration_time_sig = (j_sig - i_sig) * .001;
+    end
+       
+    for i_zerocrossing_rebound = i_zerocrossing:-1:1
+    	if ~(splinedSTA(i_zerocrossing_rebound) < mean(trial_estim_amps)); break; end
+    end
+    
+    plot(STA_t(1) - .001 + (i_zerocrossing_rebound * .001), splinedSTA(i_zerocrossing_rebound), 'ok', 'LineWidth', 2)
+    plot(STA_t(1) - .001 + ((i_zerocrossing + 1) * .001), splinedSTA(i_zerocrossing + 1), 'ok', 'LineWidth', 2)
+    
+    [peak_amp_rebound, peak_location_rebound] = min(splinedSTA(i_zerocrossing_rebound:i_zerocrossing));
+    
+    [H_peak_rebound, ~] = ztest(peak_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
+    
+    if H_peak_rebound
+        if ~ p.vstim
+            peak_Integration_time = (i_zerocrossing - i_zerocrossing_rebound) * .001;
+        elseif p.vstim
+            trough_Integration_time = (i_zerocrossing - i_zerocrossing_rebound) * .001;
+        end
+        peak_location_time_rebound = abs(splinedSTA_t(1) + peak_location_rebound * .001 - .001);
+        trough_location_time_rebound = - 10;
+    else
+        if ~ p.vstim
+            peak_Integration_time = 0;
+            peak_location_time_rebound = - 10;
+            trough_location_time_rebound = - 10;
+        elseif p.vstim
+            trough_Integration_time = 0;
+        end
+    end
+	
+elseif (splinedSTA_peak_idx > splinedSTA_trough_idx)
     
     locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
     i_zerocrossing = locs(locs == splinedSTA_peak_idx);
@@ -186,137 +249,6 @@ if (splinedSTA_peak_idx > splinedSTA_trough_idx)
         
     else
         trough_Integration_time_sig = 0;
-    end
-    
-elseif (splinedSTA_peak_idx < splinedSTA_trough_idx)
-    
-    locs = find(splinedSTA(1:length(splinedSTA) / 2) > mean(trial_estim_amps));
-    i_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
-    j_zerocrossing = (locs(find(locs == splinedSTA_trough_idx)));
-    
-    i_sig = i_zerocrossing;
-    j_sig = j_zerocrossing;
-    
-    while (splinedSTA(i_zerocrossing) > mean(trial_estim_amps))
-        i_zerocrossing = i_zerocrossing - 1;
-        if (i_zerocrossing == 0)
-            i_zerocrossing = 1;
-            break;
-        end
-    end
-    
-    while ((splinedSTA(i_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
-        i_sig = i_sig - 1;
-        if (i_sig == 0)
-            i_sig = 1;
-            break;
-        end
-    end
-    
-    plot(STA_t(1) - .001 + (i_zerocrossing * .001), splinedSTA(i_zerocrossing), 'ok', 'LineWidth', 2)
-    hold on
-    plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
-    
-    while (splinedSTA(j_zerocrossing) > mean(trial_estim_amps))
-        j_zerocrossing = j_zerocrossing + 1;
-        if (j_zerocrossing > length(splinedSTA) / 2)
-            break;
-        end
-    end
-    
-    while ((splinedSTA(j_sig) > mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
-        j_sig = j_sig + 1;
-        if (j_sig > length(splinedSTA) / 2)
-            break;
-        end
-    end
-    
-    plot(STA_t(1) - .001 + (j_zerocrossing * .001), splinedSTA(j_zerocrossing), 'ok', 'LineWidth', 2)
-    hold on
-    plot(STA_t(1) - .001 + (j_sig * .001), splinedSTA(j_sig), 'or', 'LineWidth', 2)
-    
-    if ~ p.vstim
-        
-        trough_Integration_time = (j_zerocrossing - i_zerocrossing) * .001;
-        trough_Integration_time_sig = (j_sig - i_sig) * .001;
-        
-    elseif p.vstim
-        
-        peak_Integration_time = (j_zerocrossing - i_zerocrossing) * .001;
-        peak_Integration_time_sig = (j_sig - i_sig) * .001;
-        
-    end
-    
-    i_zerocrossing_rebound = i_zerocrossing;
-    j_zerocrossing_rebound_end = i_zerocrossing_rebound;
-    
-    while (splinedSTA(i_zerocrossing_rebound) < mean(trial_estim_amps))
-        i_zerocrossing_rebound = i_zerocrossing_rebound - 1;
-        if (i_zerocrossing_rebound == 1)
-            break;
-        end
-    end
-    
-    plot(STA_t(1) - .001 + (i_zerocrossing_rebound * .001), splinedSTA(i_zerocrossing_rebound), 'ok', 'LineWidth', 2)
-    plot(STA_t(1) - .001 + ((i_zerocrossing + 1) * .001), splinedSTA(i_zerocrossing + 1), 'ok', 'LineWidth', 2)
-    
-    peak_amp_rebound = min(splinedSTA(i_zerocrossing_rebound:j_zerocrossing_rebound_end));
-    
-    [H_peak_rebound P_peak_rebound] = ztest(peak_amp_rebound, STA_mean, STA_std, 'Alpha',alpha_value);
-    
-    if H_peak_rebound
-        
-        if ~ p.vstim
-            peak_Integration_time = (j_zerocrossing_rebound_end - i_zerocrossing_rebound) * .001;
-        elseif p.vstim
-            trough_Integration_time = (j_zerocrossing_rebound_end - i_zerocrossing_rebound) * .001;
-        end
-        
-        peak_location_rebound = find(splinedSTA(1:length(splinedSTA) / 2) == peak_amp_rebound);
-        peak_location_time_rebound = abs(splinedSTA_t(1) + peak_location_rebound * .001 - .001);
-        trough_location_time_rebound = - 10;
-        
-    else
-        
-        if ~ p.vstim
-            peak_Integration_time = 0;
-            peak_location_time_rebound = - 10;
-            trough_location_time_rebound = - 10;
-        elseif p.vstim
-            trough_Integration_time = 0;
-        end
-    end
-    
-    if STA_peak_issig == 1
-        
-        locs = find(splinedSTA(1:length(splinedSTA) / 2) < mean(trial_estim_amps));
-        i_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
-        j_zerocrossing = (locs(find(locs == splinedSTA_peak_idx)));
-        i_sig = i_zerocrossing;
-        j_sig = j_zerocrossing;
-        
-        while ((splinedSTA(i_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(i_sig), STA_mean, STA_std, 'Alpha',alpha_value))
-            i_sig = i_sig - 1;
-            if (i_sig == 0)
-                i_sig = 1;
-                break;
-            end
-        end
-        
-        while ((splinedSTA(j_sig) < mean(trial_estim_amps)) && ztest(splinedSTA(j_sig), STA_mean, STA_std, 'Alpha',alpha_value))
-            j_sig = j_sig + 1;
-            if (j_sig > length(splinedSTA) / 2)
-                break;
-            end
-        end
-        
-        peak_Integration_time_sig = (j_sig - i_sig) * .001;
-        plot(STA_t(1) - .001 + (j_sig * .001), splinedSTA(j_sig), 'or', 'LineWidth', 2)
-        hold on
-        plot(STA_t(1) - .001 + (i_sig * .001), splinedSTA(i_sig), 'or', 'LineWidth', 2)
-        
-    else
-        peak_Integration_time_sig = 0;
     end
     
 elseif (splinedSTA_peak_idx == splinedSTA_trough_idx)
