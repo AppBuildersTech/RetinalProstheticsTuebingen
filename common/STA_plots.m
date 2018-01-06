@@ -9,12 +9,12 @@ mean_FR = STA_ps.nspikes / total_trial_time;
 if exp_ps.Normalize == 1
     plt_ylim = [-1, 1];
 else
-	plt_ylim = [-1000, -600];
+	plt_ylim = [-1200, -400];
 end
 yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
 
-fig_basename = sprintf('[%s]_%s_%dto%d_FR=%2.3fHz_leave_out=%0.2fs_cSOB=%d_WB=%d_SS=%d',...
-    exp_ps.cell_id,exp_ps.year,exp_ps.first_trial,exp_ps.last_trial,mean_FR,exp_ps.leave_out,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
+fig_basename = sprintf('%s_[%s]_%dto%d_FR=%2.3fHz_cSOB=%d_WB=%d_SS=%d',...
+    exp_ps.exp_id,exp_ps.cell_id,exp_ps.first_trial,exp_ps.last_trial,mean_FR,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
 
 %% Plot 1: STA_ps.STA
 figure
@@ -60,23 +60,45 @@ plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
 
 plot(STA_ps.splinedSTA_t,ones(length(STA_ps.splinedSTA))*STA_ps.estim_mean,'k--');
 
-plot(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'r*');
-text(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'D1');
+text(- .8, - 500, sprintf('D1 Significant? %d',D_ps.D1_issig))
+text(- .8, - 520, sprintf('D2 Significant? %d',D_ps.D2_issig))
 
-plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(1)),STA_ps.splinedSTA(D_ps.D1_cross_ids(1)),'k.','MarkerSize',12);
-plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(2)),STA_ps.splinedSTA(D_ps.D1_cross_ids(2)),'k.','MarkerSize',12);
+if D_ps.D1_issig
+    plot(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'r*');
+    text(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'D1');
+    if sum(isnan(D_ps.D1_cross_ids)) == 0
+        plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(1)),STA_ps.splinedSTA(D_ps.D1_cross_ids(1)),'k.','MarkerSize',12);
+        plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(2)),STA_ps.splinedSTA(D_ps.D1_cross_ids(2)),'k.','MarkerSize',12);
+    
+        D1_width = STA_ps.splinedSTA_t(D_ps.D1_cross_ids(2)) - STA_ps.splinedSTA_t(D_ps.D1_cross_ids(1));
+        text(- .8, - 550, sprintf('D1 Width (0cross): %.3f',D1_width))
+    end
+    if sum(isnan(D_ps.D1_finsig_ids))== 0
+        plot(STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(1)),STA_ps.splinedSTA(D_ps.D1_finsig_ids(1)),'go');
+        plot(STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(2)),STA_ps.splinedSTA(D_ps.D1_finsig_ids(2)),'go');
+        
+        D1_width = STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(2)) - STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(1));
+        text(- .8, - 570, sprintf('D1 Width (finsig): %.3f',D1_width))
+    end
+end
+if D_ps.D2_issig
+    plot(STA_ps.splinedSTA_t(D_ps.D2_idx),D_ps.D2_val,'r*');
+    text(STA_ps.splinedSTA_t(D_ps.D2_idx),D_ps.D2_val,'D2');
+    if sum(isnan(D_ps.D2_cross_ids))== 0
+        plot(STA_ps.splinedSTA_t(D_ps.D2_cross_ids(1)),STA_ps.splinedSTA(D_ps.D2_cross_ids(1)),'k.','MarkerSize',12);
+        plot(STA_ps.splinedSTA_t(D_ps.D2_cross_ids(2)),STA_ps.splinedSTA(D_ps.D2_cross_ids(2)),'k.','MarkerSize',12);
+        
+        D2_width = STA_ps.splinedSTA_t(D_ps.D2_cross_ids(2)) - STA_ps.splinedSTA_t(D_ps.D2_cross_ids(1));
+        text(- .8, - 600, sprintf('D2 Width (0cross): %.3f',D2_width))
+    end
+    if sum(isnan(D_ps.D2_finsig_ids))== 0
+        plot(STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(1)),STA_ps.splinedSTA(D_ps.D2_finsig_ids(1)),'go');
+        plot(STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(2)),STA_ps.splinedSTA(D_ps.D2_finsig_ids(2)),'go');
 
-plot(STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(1)),STA_ps.splinedSTA(D_ps.D1_finsig_ids(1)),'go');
-plot(STA_ps.splinedSTA_t(D_ps.D1_finsig_ids(2)),STA_ps.splinedSTA(D_ps.D1_finsig_ids(2)),'go');
-
-plot(STA_ps.splinedSTA_t(D_ps.D2_idx),D_ps.D2_val,'r*');
-text(STA_ps.splinedSTA_t(D_ps.D2_idx),D_ps.D2_val,'D2');
-
-plot(STA_ps.splinedSTA_t(D_ps.D2_cross_ids(1)),STA_ps.splinedSTA(D_ps.D2_cross_ids(1)),'k.','MarkerSize',12);
-plot(STA_ps.splinedSTA_t(D_ps.D2_cross_ids(2)),STA_ps.splinedSTA(D_ps.D2_cross_ids(2)),'k.','MarkerSize',12);
-
-plot(STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(1)),STA_ps.splinedSTA(D_ps.D2_finsig_ids(1)),'go');
-plot(STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(2)),STA_ps.splinedSTA(D_ps.D2_finsig_ids(2)),'go');
+        D2_width = STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(2)) - STA_ps.splinedSTA_t(D_ps.D2_finsig_ids(1));
+        text(- .8, - 620, sprintf('D2 Width (finsig): %.3f',D2_width))
+    end
+end
 
 title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)]);
