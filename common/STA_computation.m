@@ -7,7 +7,12 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     % Develped by Nima (20180101) from basic implementation by Sudarshan(20150730)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    load(fullfile(exp_ps.data_dir,strcat(exp_ps.exp_id, exp_ps.dfile_suffix)));
+    if length(exp_ps.exp_id) > 10
+        dfile = fullfile(exp_ps.data_dir,strcat(exp_ps.exp_id(1:10), exp_ps.dfile_suffix));
+    else
+        dfile = fullfile(exp_ps.data_dir,strcat(exp_ps.exp_id, exp_ps.dfile_suffix));        
+    end
+    load(dfile);
     spiketimes = eval(exp_ps.cell_id);
 
     stimPeriod = 1/exp_ps.stimFreq;
@@ -114,6 +119,9 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
         if ~flag_skip
             if exp_ps.NR
                 estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_'), num2str(ceil(trialIdx)), '.txt');
+                estim_design = importdata(estim_fname);
+            else
+                estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_1.txt'));
                 estim_design = importdata(estim_fname);
             end
             trial_estim_amps = get_estim_amp(estim_design.textdata, exp_ps.Normalize);

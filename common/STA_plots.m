@@ -60,12 +60,13 @@ plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
 
 plot(STA_ps.splinedSTA_t,ones(length(STA_ps.splinedSTA))*STA_ps.estim_mean,'k--');
 
-text(- .8, - 500, sprintf('D1 Significant? %d',D_ps.D1_issig))
-text(- .8, - 520, sprintf('D2 Significant? %d',D_ps.D2_issig))
+text(- .8, - 500, sprintf('D1 Significant? %d [time: %.3f]',D_ps.D1_issig, STA_ps.splinedSTA_t(D_ps.D1_idx)));
+text(- .8, - 520, sprintf('D2 Significant? %d [time: %.3f]',D_ps.D2_issig, STA_ps.splinedSTA_t(D_ps.D2_idx)));
 
 if D_ps.D1_issig
     plot(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'r*');
     text(STA_ps.splinedSTA_t(D_ps.D1_idx),D_ps.D1_val,'D1');
+
     if sum(isnan(D_ps.D1_cross_ids)) == 0
         plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(1)),STA_ps.splinedSTA(D_ps.D1_cross_ids(1)),'k.','MarkerSize',12);
         plot(STA_ps.splinedSTA_t(D_ps.D1_cross_ids(2)),STA_ps.splinedSTA(D_ps.D1_cross_ids(2)),'k.','MarkerSize',12);

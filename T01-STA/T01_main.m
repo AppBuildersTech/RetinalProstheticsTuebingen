@@ -4,10 +4,9 @@ close all;
 clc;clear;
 set(0,'DefaultFigureWindowStyle','docked');
 
-base_dir = 'D:\RathbumLab';
+base_dir = 'C:\RathbumLab';
 
-data_repos = fullfile(base_dir,'Data\');
-exp_dict =  prepare_datalist(data_repos);
+exp_dict =  T1_datalist();
 for exp_id = exp_dict.keys()
     exp_id = char(exp_id);
     exp_data_dir = fullfile(base_dir,'Data\',exp_id,'\');
