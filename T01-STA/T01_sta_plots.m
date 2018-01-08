@@ -1,4 +1,4 @@
-function STA_plots(STA_ps, D_ps, exp_ps)
+function T01_sta_plots(STA_ps, D_ps, exp_ps)
 
 line_thickness = 2;
 estim_meanline = STA_ps.estim_mean * ones(2 * exp_ps.tKerLen, 1);
