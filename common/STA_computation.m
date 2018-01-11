@@ -87,9 +87,9 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     end
 
     %% STA computation
-    estim_amps = []; % electrical stimulation amplitutes for all the trials
-    estim_times = [];
-
+    tData = {};
+    estim_means = [];
+            
     nspikes = 0; % Number of spikes which is the spike count variable for the STAs
     nstim = 0; % Total number of stimuli vectors used for STA calculation across trials
 
@@ -107,6 +107,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
 
     for trialIdx = trials_to_use
         % the fist part of the following "and" is to make the code work the same as Sudas original code
+        
         if isnan(exp_ps.trials_to_use) && exp_ps.alternate
             if (exp_ps.alternate_number > 1) && (rem(trialIdx, exp_ps.alternate_number) == 1)
                 flag_skip = xor(flag_skip,true);
@@ -124,52 +125,46 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
                 estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_1.txt'));
                 estim_design = importdata(estim_fname);
             end
+
             trial_estim_amps = get_estim_amp(estim_design.textdata, exp_ps.Normalize);
             count_TTL = length(trial_estim_amps);
 
-            % the fist part of the following "or" is to make the code work the same as Sudas original code
-            % note that estim_timings will hold the start time of the applied stimulus
-            if isnan(exp_ps.trials_to_use) || (exp_ps.leaveit == 1)
-                estim_timings = A2a(((count_TTL * (trialIdx - 1)) + 1):(count_TTL * (trialIdx - 1)) + count_TTL);
-            elseif ~isnan(exp_ps.trials_to_use) && (exp_ps.leaveit == 2)
-                if rem(trialIdx, exp_ps.alternate_number) == 0
-                    estim_timings = A2a((floor(trialIdx / exp_ps.skip_cycle) * (exp_ps.alternate_number * (count_TTL + exp_ps.skip))) + (count_TTL * (exp_ps.alternate_number - 1)) + 1:(floor(trialIdx / exp_ps.skip_cycle) * (exp_ps.alternate_number * ...
-                    (count_TTL + exp_ps.skip))) + (count_TTL * exp_ps.alternate_number));
-                else
-                    estim_timings = A2a((floor(trialIdx / exp_ps.skip_cycle) * (exp_ps.alternate_number * (count_TTL + exp_ps.skip))) + (count_TTL * (rem(trialIdx, exp_ps.alternate_number) - 1)) + 1:(floor(trialIdx / exp_ps.skip_cycle) * (exp_ps.alternate_number * ...
-                    (count_TTL + exp_ps.skip))) + (count_TTL * rem(trialIdx, exp_ps.alternate_number)));
-                end
-            end
+            trial_estim_t = A2a(((count_TTL * (trialIdx - 1)) + 1):(count_TTL * (trialIdx - 1)) + count_TTL);
+
             % the following line is where the shift in recorded electrical stimulation is happing
             % the source of this delay might be the equipment latency or even some cellular grounds
-            estim_timings = estim_timings - exp_ps.post_wait;
-            estim_spiketimes = spiketimes((spiketimes > estim_timings(1, 1) & spiketimes <= estim_timings(end, 1)), 1);
+            trial_estim_t = trial_estim_t - exp_ps.post_wait;
+            trial_estim_spt = spiketimes((spiketimes > trial_estim_t(1, 1) & spiketimes <= trial_estim_t(end, 1)), 1);
 
             % deletes direct RGC spikes based on lock out period
             if exp_ps.leave_out > 0
                 tsp_del_loc = [];
-                for esIdx = 1:length(estim_timings)
-                    tsp_del_temp_loc = find(estim_spiketimes >= estim_timings(esIdx) & estim_spiketimes <= estim_timings(esIdx) + exp_ps.leave_out);
+                for esIdx = 1:length(trial_estim_t)
+                    tsp_del_temp_loc = find(trial_estim_spt >= trial_estim_t(esIdx) & trial_estim_spt <= trial_estim_t(esIdx) + exp_ps.leave_out);
                     tsp_del_loc = vertcat(tsp_del_loc, tsp_del_temp_loc);
                 end
-                estim_spiketimes(tsp_del_loc) = [];
+                trial_estim_spt(tsp_del_loc) = [];
             end
             % Corrects spike times based on starting TTL pulse of each trial, so that all spike times will be between 0 and 100s
-            estim_spiketimes = estim_spiketimes - estim_timings(1);
-            estim_timings = estim_timings - estim_timings(1);
+            trial_estim_spt = trial_estim_spt - trial_estim_t(1);
+            trial_estim_t = trial_estim_t - trial_estim_t(1);
 
-            estim_binranges = vertcat(estim_timings, estim_timings(end)+1/exp_ps.stimFreq);
-            spcount_binned = histcounts(estim_spiketimes, estim_binranges);      % binned spike counts
+            estim_binranges = vertcat(trial_estim_t, trial_estim_t(end)+1/exp_ps.stimFreq);
+            spcount_binned = histcounts(trial_estim_spt, estim_binranges);      % binned spike counts
 
-            [trial_STA, trial_estim_times, trial_nstim, trial_nspikes] = compgroupSTA_estim(trial_estim_amps, spcount_binned, exp_ps.tKerLen); % compute STA
+            [trial_STA, ~, trial_nstim, trial_nspikes] = compgroupSTA_estim(trial_estim_amps, spcount_binned, exp_ps.tKerLen); % compute STA
 
             STA = STA + trial_STA;
 
             nspikes = nspikes + trial_nspikes;
             nstim = nstim + trial_nstim;
 
-            estim_amps = [estim_amps; trial_estim_amps]; 
-            estim_times = [estim_times; trial_estim_times];
+            tData(trialIdx).estim_amps = trial_estim_amps;
+            tData(trialIdx).estim_ts = trial_estim_t; 
+            tData(trialIdx).estim_spts = trial_estim_spt; 
+            
+            estim_means = [estim_means,mean(trial_estim_amps)];
+            % estim_times = [estim_times; trial_estim_times];
             % the number of trial amplitutes should be 54 * 2500 = 135000
             % number of stimulus times is a subset of this total number because
             % not all stimuli are used in the STA analysis. In my opinion in the
@@ -179,14 +174,14 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
         end
     end
 
-    STA = STA / nspikes; % Divides the Stimulus Sum/ Total Number of Spikes
+    STA = STA' / nspikes; % Divides the Stimulus Sum/ Total Number of Spikes
 
     STA_t = (0.5 - exp_ps.tKerLen)* stimPeriod:stimPeriod:(exp_ps.tKerLen  - .5)* stimPeriod;
-    estim_mean = ceil(mean(mean(estim_amps)));
+    estim_mean = mean(estim_means);
 
     %% splined STA
     correctedSTA = STA;
-    splinedSTA_t = STA_t(1):.001:STA_t(end)-0.001;
+    splinedSTA_t = STA_t(1):.001:STA_t(end)+0.001;
     if exp_ps.single_pulse_activation_correction
         correctedSTA(length(STA) / 2) = estim_mean;
     end
@@ -201,8 +196,12 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     STA_ps.STA_t = STA_t;
     STA_ps.splinedSTA = splinedSTA;
     STA_ps.splinedSTA_t = splinedSTA_t;
+    STA_ps.correctedSTA = correctedSTA;
     STA_ps.estim_mean = estim_mean;
     STA_ps.nspikes = nspikes;
+    
+    STA_ps.tData = tData;
+    %STA_ps.estim_times = estim_times;
 
 end
         
