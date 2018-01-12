@@ -107,8 +107,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
 
     for trialIdx = trials_to_use
         % the fist part of the following "and" is to make the code work the same as Sudas original code
-        
-        if isnan(exp_ps.trials_to_use) && exp_ps.alternate
+        if isnan(exp_ps.trials_to_use) && exp_ps.alternate % ToDo: make sure the part of the code related to flag_skip works correctly
             if (exp_ps.alternate_number > 1) && (rem(trialIdx, exp_ps.alternate_number) == 1)
                 flag_skip = xor(flag_skip,true);
             else
@@ -117,6 +116,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
         else
             flag_skip = false;
         end
+        
         if ~flag_skip
             if exp_ps.NR
                 estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_'), num2str(ceil(trialIdx)), '.txt');

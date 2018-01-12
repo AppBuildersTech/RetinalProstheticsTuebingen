@@ -26,6 +26,6 @@ for exp_id = exp_dict.keys()
 
         [STA_ps, D_ps] = STA_computation(exp_ps);
         T01_plots(STA_ps, D_ps, exp_ps);
-        copyfile(config_file,work_dir)
+        copyfile(config_file,work_dir);
     end
 end
