@@ -55,7 +55,6 @@ estim_amps = STA_ps.tData(trialIdx).estim_amps;
 estim_inds = 1:length(estim_amps); % stimulus sample indices used for plotting
 estim_ts = STA_ps.tData(trialIdx).estim_ts;
 estim_spts = STA_ps.tData(trialIdx).estim_spts;
-
 %% Figure 1xx - STA PLots
 figsSeries = 100;
 figure(figsSeries);
@@ -95,8 +94,7 @@ figure(figsSeries+trialIdx);
 
 genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps,STA_crop);
 genSig_inds = Kw:length(genSig_vals)+Kw-1;
-genSig_ts = estim_ts(genSig_inds);
-genSig_vals_norm = (genSig_vals-mean(genSig_vals))/std(genSig_vals);
+genSig_ts = estim_ts(genSig_inds); %  We assign the timestamp corresponding to the end point of the xcorrel window to that genSig value
 
 ax1 = subplot(211);plot(estim_inds, estim_amps);
 ax2 = subplot(212);plot(genSig_inds, genSig_vals);
@@ -114,29 +112,29 @@ subplot(211);title(fig_basename, 'Interpreter', 'none');
 figsSeries = 300;
 figure(figsSeries+trialIdx);
 
-estim_binedges = min(estim_amps):50:max(estim_amps);
+estim_binedges = linspace(min(estim_amps),max(estim_amps),50);
 [estim_bincounts] = histc(estim_amps, estim_binedges);
 subplot(121);bar(estim_binedges, estim_bincounts,'histc');
 
-genSig_binedges = min(genSig_vals_norm):0.1:max(genSig_vals_norm);
-[genSig_bincounts] = histc(genSig_vals_norm, genSig_binedges);
-subplot(122);bar(genSig_binedges, genSig_bincounts,'histc');xlim([-4,4]);
+genSig_binedges = linspace(min(genSig_vals),max(genSig_vals),50);
+[genSig_bincounts] = histc(genSig_vals, genSig_binedges);
+subplot(122);bar(genSig_binedges, genSig_bincounts,'histc');
 
-suptitle('Histograms for stimuli and generating signal')
+suptitle('Histogram of the Stimuli / Generator Signal Amplitudes')
 
 %% Figure 4xx - Extracting Spike associated stimuli
-% get the spike timings and while keeping certain values of estim and
-% genSig before the spike time set all the other values to nan
-% then plot the above figures again
+% Extract the values in the stimuli and the generator signal that caused a
+% spike. This would be a window of stimuli that immediately precede a spike
+% or the single generator signal value before that spike
 figsSeries = 400;
 figure(figsSeries+trialIdx);
 
 speriod = 1/exp_ps.stimFreq;%sampling period
-pre_spike_sample = 1;% for 25 Hz samples are 0.04 s far.
+pre_spike_sample = 16;% for 25 Hz, samples are 0.04 s far.
 
-spike_estim_vals = interp1(estim_ts,estim_amps,estim_spts); % the values of the stimulus at the spike timepoint
+spike_estim_vals = interp1(estim_ts,estim_amps,estim_spts); % the values of the stimulus at the spike timepoint used for plotting
 sp_assoc_stimuli = NaN(size(estim_amps));%spike associated stimuli
-for spike_t = estim_spts'
+for spike_t = estim_spts' 
     idx_tochange = ((estim_ts>=(spike_t-pre_spike_sample*speriod))&(estim_ts<spike_t));
     sp_assoc_stimuli(idx_tochange) = estim_amps(idx_tochange);
 end
@@ -148,10 +146,16 @@ plot(estim_ts, sp_assoc_stimuli,'b*');hold on;
 
 xlim([0,100]);
 
-spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts); % the values of the stimulus at the spike timepoint
-sp_assoc_genSig = NaN(size(genSig_vals));%spike associated stimuli
-for spike_t = estim_spts'
-    idx_tochange = ((genSig_ts>=(spike_t-pre_spike_sample*speriod))&(genSig_ts<spike_t));
+% In the first subplot the yellow line shows the stimuli variations,
+% the black dots mark the sample points in the stimuli (might be overlayed by blue stars)
+% the red dots show the time point that a spike occured
+% the blue-stared values are the ones included as the spike associated stimuli
+% note that in the variable sp_assoc_stimuli all the indices corresponding to black dots are NaN and indices correponding to blue stars are genSig
+
+spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts);
+sp_assoc_genSig = NaN(size(genSig_vals));%spike associated generator signal
+for spike_t = estim_spts' 
+    idx_tochange = ((genSig_ts>=(spike_t-speriod))&(genSig_ts<spike_t));
     sp_assoc_genSig(idx_tochange) = genSig_vals(idx_tochange);
 end
 
@@ -162,37 +166,42 @@ plot(genSig_ts, sp_assoc_genSig,'b*');hold on;
 
 xlim([0,100]);
 linkaxes([ax1,ax2],'x')
-suptitle('Extracting spike trigering stimuli and generator signal')
+suptitle('Extracting the spike associated stimuli/generator signal')
 
-%% Figure 5xx - Histograms for spike associated stimuli
+%% Figure 5xx - Histograms for the spike associated stimuli/generator signal
 figsSeries = 500;
 figure(figsSeries+trialIdx);
+
+subplot(221);bar(estim_binedges, estim_bincounts,'histc');title('Stimuli');
+subplot(222);bar(genSig_binedges, genSig_bincounts,'histc');title('Generator Signal');
 
 nan_idx = isnan(sp_assoc_genSig);
 sp_assoc_genSig_nonan = sp_assoc_genSig;
 sp_assoc_genSig_nonan(nan_idx) = [];
 
-estim_binedges = min(sp_assoc_stimuli):50:max(sp_assoc_stimuli);
+estim_binedges = linspace(min(sp_assoc_stimuli),max(sp_assoc_stimuli),50);
 [estim_bincounts] = histc(sp_assoc_stimuli, estim_binedges);
-subplot(121);bar(estim_binedges, estim_bincounts,'histc');
+subplot(223);bar(estim_binedges, estim_bincounts,'histc');title('Spike Associated Stimuli');
 
-sp_assoc_genSig_norm = (sp_assoc_genSig_nonan-mean(genSig_vals))/std(genSig_vals);
-sp_assoc_genSig_binedges = min(sp_assoc_genSig_norm):0.1:max(sp_assoc_genSig_norm);
-[sp_assoc_genSig_bincounts] = histc(sp_assoc_genSig_norm, sp_assoc_genSig_binedges);
-subplot(122);bar(sp_assoc_genSig_binedges, sp_assoc_genSig_bincounts,'histc');xlim([-4,4]);
+sp_assoc_genSig_binedges = linspace(min(sp_assoc_genSig_nonan),max(sp_assoc_genSig_nonan),50);
+[sp_assoc_genSig_bincounts] = histc(sp_assoc_genSig_nonan, sp_assoc_genSig_binedges);
+subplot(224);bar(sp_assoc_genSig_binedges, sp_assoc_genSig_bincounts,'histc');title('Spike Associated Gnerator Signal');
 
-suptitle('Histograms for spike associated stimuli and generating signal');
+suptitle('Histogram of the Spike Associated Stimuli / Generator Signal Amplitudes')
 
 %% Figure 6xx - Firing Rate vs Generator Signal
+% We would like to count the number of spikes corresponding to each value of the
+% generator signal. For this we first assign a generator signal value to
+% each spike time stamp. We then bin those spike_genSig_vals and count the
+% number of times a value falls within each bin and visualize it as a histogram.
 figsSeries = 600;
 figure(figsSeries+trialIdx);
 
-% to each spike associate a value from the generator signal and that would
-% be spike_genSig_vals or another normalized version
-
-spike_genSig_vals_norm = interp1(genSig_ts,genSig_vals_norm,estim_spts);
-FRgenSig_binedges = linspace(min(spike_genSig_vals_norm),max(spike_genSig_vals_norm),100);
-[FRgenSig_bincounts] = histc(spike_genSig_vals_norm, FRgenSig_binedges);
+spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts(estim_spts>=genSig_ts(1)));
+FRgenSig_binedges = linspace(min(spike_genSig_vals),max(spike_genSig_vals),50);
+[FRgenSig_bincounts] = histc(spike_genSig_vals, FRgenSig_binedges);
 bar(FRgenSig_binedges,FRgenSig_bincounts,'histc');
 xlabel('Gen. Sig');
-ylabel('#Spike');
+ylabel('#Spikes');
+
+suptitle('Histogram of the #Spikes per bin of the Generator Signal Amplitude');

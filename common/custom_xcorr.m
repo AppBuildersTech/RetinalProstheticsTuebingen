@@ -19,7 +19,7 @@ T = size(Xin,2);
 out_xcorr = zeros(T-Kw+1,1);
 
 for xIdx = 1:T-Kw+1
-    out_xcorr(xIdx) = sum(Xin(xIdx:(xIdx+Kw-1)) .* kernel);
+    out_xcorr(xIdx) = Xin(xIdx:(xIdx+Kw-1)) * kernel';
 end
 
 
