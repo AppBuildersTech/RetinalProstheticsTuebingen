@@ -93,21 +93,18 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     nspikes = 0; % Number of spikes which is the spike count variable for the STAs
     nstim = 0; % Total number of stimuli vectors used for STA calculation across trials
 
-    exp_ps.skip_cycle = exp_ps.alternate_number * 2; % this line was not the STA_simplified
-
     STA = zeros(2 * exp_ps.tKerLen, 1);
-
-    flag_skip = true;
-
+    
     if isnan(exp_ps.trials_to_use)
         trials_to_use = exp_ps.first_trial:exp_ps.last_trial;
     else
-        trials_to_use = exp_ps.trials_to_use;
+        trials_to_use = eval(exp_ps.trials_to_use);
     end
-
+    
+    flag_skip = true;
     for trialIdx = trials_to_use
         % the fist part of the following "and" is to make the code work the same as Sudas original code
-        if isnan(exp_ps.trials_to_use) && exp_ps.alternate % ToDo: make sure the part of the code related to flag_skip works correctly
+        if ~isnan(exp_ps.alternate_number) % ToDo: make sure the part of the code related to flag_skip works correctly
             if (exp_ps.alternate_number > 1) && (rem(trialIdx, exp_ps.alternate_number) == 1)
                 flag_skip = xor(flag_skip,true);
             else

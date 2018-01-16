@@ -13,11 +13,15 @@ else
 end
 yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
 
-fig_basename = sprintf('%s_[%s]_%dto%d_FR=%2.3fHz_cSOB=%d_WB=%d_SS=%d',...
-    exp_ps.exp_id,exp_ps.cell_id,exp_ps.first_trial,exp_ps.last_trial,mean_FR,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
+% fig_basename = sprintf('%s_[%s]_%dto%d_FR=%2.3fHz_cSOB=%d_WB=%d_SS=%d',...
+%     exp_ps.exp_id,exp_ps.cell_id,exp_ps.first_trial,exp_ps.last_trial,mean_FR,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
+
+fig_basename = sprintf('%s_%s',exp_ps.exp_id,exp_ps.cell_id);
 
 %% Plot 1: STA_ps.STA
-figure
+figIdx = 1;
+figure()%(figIdx);
+    
 set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
 set(gcf, 'color', 'w');
 
@@ -30,7 +34,7 @@ title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)])
 
 %saveas(gcf, [exp_ps.work_dir, fig_basename,'_STA.fig']);
-saveas(gcf, [exp_ps.work_dir, fig_basename, '_STA.jpeg']);
+saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
 %% Plot 2: STA_ps.STA with error bars - ToDo: write STA_ps.STA with errorbars again IMHO code was either extremely complex written or not correct for their intented purpose
 % STA_error = std(STA_ps.STA(length(STA_ps.STA) / 2 + 1:end)) / sqrt(exp_ps.tKerLen);
@@ -38,7 +42,9 @@ saveas(gcf, [exp_ps.work_dir, fig_basename, '_STA.jpeg']);
 % errorbar(STA_ps.STA_t, estim_meanline, STA_error, 'k')7
 
 %% Plot 3 - splined STA_ps.STA
-figure
+figIdx = 3;
+figure()%(figIdx);
+
 set(gcf, 'PaperPosition', [0 0 20 10]); %x_width=10cm y_width=15cm
 set(gcf, 'color', 'w');
 
@@ -50,11 +56,12 @@ plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
 title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)])
 
-%saveas(gcf, [exp_ps.work_dir, fig_basename,'_splinedSTA.fig']);
-saveas(gcf, [exp_ps.work_dir, fig_basename, '_splinedSTA.jpeg']);
+saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
 %% Plot 4 - significance plots
-figure;
+figIdx = 4;
+figure()%(figIdx);
+
 plot(STA_ps.splinedSTA_t,STA_ps.splinedSTA,'LineWidth', line_thickness);hold on;
 plot(yaxis_line, plt_ylim(1):100:plt_ylim(2), 'k');
 
@@ -105,5 +112,6 @@ title(fig_basename, 'Interpreter', 'none')
 ylim([plt_ylim(1) plt_ylim(2)]);
 
 %saveas(gcf, [exp_ps.work_dir, fig_basename,'_STASignificance.fig']);
-saveas(gcf, [exp_ps.work_dir, fig_basename, '_STASignificance.jpeg']);
+saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
+
 end
