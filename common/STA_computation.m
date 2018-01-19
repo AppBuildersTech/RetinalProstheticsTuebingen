@@ -1,6 +1,4 @@
 function [STA_ps, D_ps] = STA_computation(exp_ps)
-    % estim_amps: electrical stimulation amplitutes for all the trials
-
     % This function calculates STAs, smooths the STA with cubic splining,
     % calculates parameters like location of peak & trough of STA and the
     % integration window of peak and integration window of trough
@@ -17,14 +15,15 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
 
     stimPeriod = 1/exp_ps.stimFreq;
 
-    if isnan(exp_ps.start_TTL) || isnan(exp_ps.stop_TTL)
-        A2a = A2a(1:end, 1);% this line was not the STA_simplified
-    else
-        A2a = A2a(exp_ps.start_TTL:exp_ps.stop_TTL, 1);% this line was not the STA_simplified
-    end
-    %% ToDo: the following part of the code activated by cardinal_STA_Only_Burst should be revised
+    A2a = A2a((1+exp_ps.cut_TTL_head):(end-exp_ps.cut_TTL_tail), 1);% this line was not the STA_simplified
+    
+    length(A2a)
+    trail_count_TTL = exp_ps.stimFreq*exp_ps.trial_length_in_secs;
+    num_trials = length(A2a)/trail_count_TTL
+    
+    %% ToDo: the following part of the code activated by BTA should be revised
     % otherwise it expected to be highly error prone
-    if exp_ps.cardinal_STA_Only_Burst
+    if exp_ps.BTA
         % fsta spike times are recalculated so that the original spike train is burst corrected.
         % The corrected spike times can be weighted.
         % Singleton spikes can be included.
@@ -96,11 +95,29 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     STA = zeros(2 * exp_ps.tKerLen, 1);
     
     if isnan(exp_ps.trials_to_use)
-        trials_to_use = exp_ps.first_trial:exp_ps.last_trial;
+        trials_to_use = 1:num_trials;
     else
         trials_to_use = eval(exp_ps.trials_to_use);
     end
     
+    if ~isnan(exp_ps.mat_stim)
+        estim_fname = strcat(fullfile(exp_ps.data_dir,exp_ps.mat_stim), '.mat');
+        estim_amps = importdata(estim_fname);
+    else
+        estim_amps = zeros(num_trials, exp_ps.trial_length_in_secs *exp_ps.stimFreq);
+        for trialIdx = trials_to_use
+            if ~exp_ps.single_stim
+                estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_'), num2str(ceil(trialIdx)), '.txt');
+                temp_estim = importdata(estim_fname);
+                estim_amps(trialIdx,:) = get_estim_amp(temp_estim.textdata, exp_ps.Normalize);
+            else
+                estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_1.txt'));
+                temp_estim = importdata(estim_fname);
+                estim_amps(trialIdx,:) = get_estim_amp(temp_estim.textdata, exp_ps.Normalize);
+            end
+        end
+    end
+            
     flag_skip = true;
     for trialIdx = trials_to_use
         % the fist part of the following "and" is to make the code work the same as Sudas original code
@@ -115,18 +132,8 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
         end
         
         if ~flag_skip
-            if exp_ps.NR
-                estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_'), num2str(ceil(trialIdx)), '.txt');
-                estim_design = importdata(estim_fname);
-            else
-                estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_1.txt'));
-                estim_design = importdata(estim_fname);
-            end
 
-            trial_estim_amps = get_estim_amp(estim_design.textdata, exp_ps.Normalize);
-            count_TTL = length(trial_estim_amps);
-
-            trial_estim_t = A2a(((count_TTL * (trialIdx - 1)) + 1):(count_TTL * (trialIdx - 1)) + count_TTL);
+            trial_estim_t = A2a(((trail_count_TTL * (trialIdx - 1)) + 1):(trail_count_TTL * (trialIdx - 1)) + trail_count_TTL);
 
             % the following line is where the shift in recorded electrical stimulation is happing
             % the source of this delay might be the equipment latency or even some cellular grounds
@@ -149,18 +156,18 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
             estim_binranges = vertcat(trial_estim_t, trial_estim_t(end)+1/exp_ps.stimFreq);
             spcount_binned = histcounts(trial_estim_spt, estim_binranges);      % binned spike counts
 
-            [trial_STA, ~, trial_nstim, trial_nspikes] = compgroupSTA_estim(trial_estim_amps, spcount_binned, exp_ps.tKerLen); % compute STA
+            [trial_STA, ~, trial_nstim, trial_nspikes] = compgroupSTA_estim(estim_amps(trialIdx,:), spcount_binned, exp_ps.tKerLen); % compute STA
 
             STA = STA + trial_STA;
 
             nspikes = nspikes + trial_nspikes;
             nstim = nstim + trial_nstim;
 
-            tData(trialIdx).estim_amps = trial_estim_amps;
+            tData(trialIdx).estim_amps = estim_amps(trialIdx,:);
             tData(trialIdx).estim_ts = trial_estim_t; 
             tData(trialIdx).estim_spts = trial_estim_spt; 
             
-            estim_means = [estim_means,mean(trial_estim_amps)];
+            estim_means = [estim_means,mean(estim_amps(trialIdx,:))];
             % estim_times = [estim_times; trial_estim_times];
             % the number of trial amplitutes should be 54 * 2500 = 135000
             % number of stimulus times is a subset of this total number because
@@ -198,6 +205,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     STA_ps.nspikes = nspikes;
     
     STA_ps.tData = tData;
+    STA_ps.A2a = A2a;%wont use it anywhere actually
     %STA_ps.estim_times = estim_times;
 
 end
@@ -205,7 +213,7 @@ end
 function trial_estim_amps = get_estim_amp(textdata, Normalize)
     trial_estim_amps = [];
     % formats stimuli from text file into a vector
-    for i = 8:2:length(textdata)%p.last % 8 is the starting line in the trial_estim_amps textfile
+    for i = 8:2:length(textdata)%p.last % 8 is the starting line in the estim_amps(trialIdx,:) textfile
         x = str2double(textdata{i, 1});
         trial_estim_amps = horzcat(trial_estim_amps, x);
     end
@@ -225,9 +233,9 @@ function [STA, stimulus_matrix, nstim, nspikes] = compgroupSTA_estim(estim_amp, 
     %    STA = Vector of stimuli preceding spikes in given bin multiplied by the number of spikes in that given bin
     %    NSP = Number of spcount_binned across all trials used for the final STA calculation
     %    NSTM = total number of stimuli vectors used for STA calculation across trials
-    %    count_TTL = length of stimulus
+    %    trail_count_TTL = length of stimulus
 
-    count_TTL = length(estim_amp);
+    trail_count_TTL = length(estim_amp);
 
     bins_with_spikes = find(spcount_binned); %Find which positions in the spike histogram had spikes
     spikes_before_stim = find(bins_with_spikes <= tKerLen); %Since I want to store tKerLen frames preceding each spike, I need to exclude those spikes which ocured within the
@@ -236,7 +244,7 @@ function [STA, stimulus_matrix, nstim, nspikes] = compgroupSTA_estim(estim_amp, 
 
     % Finds the number of spikes that happened within the last tKerLen from the end of the stimulus.
 
-    spikes_after_stim = find(bins_with_spikes > (count_TTL - tKerLen));
+    spikes_after_stim = find(bins_with_spikes > (trail_count_TTL - tKerLen));
 
     % length(location): The last spike that occured before the first tKerLen frames and find its position
 
@@ -252,7 +260,7 @@ function [STA, stimulus_matrix, nstim, nspikes] = compgroupSTA_estim(estim_amp, 
 
     % For loop that actually calculates the STA
     for i = 1:length(bins_with_spikes)
-        if (bins_with_spikes(i) > tKerLen) && (bins_with_spikes(i) < (count_TTL - tKerLen)) % If the spike occurs after the first tKerLen frames in a trial or before the last tKerLen frames in a trial include the stimuli for the STA calculation
+        if (bins_with_spikes(i) > tKerLen) && (bins_with_spikes(i) < (trail_count_TTL - tKerLen)) % If the spike occurs after the first tKerLen frames in a trial or before the last tKerLen frames in a trial include the stimuli for the STA calculation
             stimulus_matrix(i, :) = estim_amp(:, (bins_with_spikes(i)) + (1 - tKerLen):(bins_with_spikes(i)) + tKerLen)'; % Stores the stimuli used for the STA calculation
             STA = STA + (stimulus_matrix(i, :) .* spcount_binned(bins_with_spikes(i)))';
             % The STA vector adds up all the stimuli occuring before a spike. The stimuli are multiplied by the number of spikes they cause before they are used for the STA calculation

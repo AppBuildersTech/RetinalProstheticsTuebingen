@@ -13,8 +13,8 @@ else
 end
 yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
 
-% fig_basename = sprintf('%s_[%s]_%dto%d_FR=%2.3fHz_cSOB=%d_WB=%d_SS=%d',...
-%     exp_ps.exp_id,exp_ps.cell_id,exp_ps.first_trial,exp_ps.last_trial,mean_FR,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
+% fig_basename = sprintf('%s_[%s]_FR=%2.3fHz_cSOB=%d_WB=%d_SS=%d',...
+%     exp_ps.exp_id,exp_ps.cell_id,mean_FR,exp_ps.cardinal_STA_Only_Burst,exp_ps.weighted_burst,exp_ps.singleton_spikes);
 
 fig_basename = sprintf('%s_%s',exp_ps.exp_id,exp_ps.cell_id);
 
