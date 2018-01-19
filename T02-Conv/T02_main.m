@@ -45,7 +45,6 @@ for exp_id = exp_dict.keys()
             display('Warning! No significant D2/D1 or no crossing were found! using the initial point of the STA.');
         end
 
-
         %% Extracting STA and perparing variables
         estim_meanline = STA_ps.estim_mean * ones(2 * exp_ps.tKerLen, 1);
         STA_crop = STA_ps.correctedSTA(crop1_idx:crop2_idx);
@@ -108,26 +107,7 @@ for exp_id = exp_dict.keys()
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
-            %% Figure 3xx - Histograms
-            figIdx = 4;
-            figure();
-
-            [estim_binCounts,estim_binEdges] = histcounts(estim_amps);
-            estim_binCenters = (estim_binEdges(1:end-1) + estim_binEdges(2:end))/2;
-            subplot(121);bar(estim_binCenters, estim_binCounts,'histc');title('Stimuli');
-
-            [genSig_binCounts,genSig_binEdges] = histcounts(genSig_vals);
-            genSig_binCenters = (genSig_binEdges(1:end-1) + genSig_binEdges(2:end))/2;
-            subplot(122);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
-
-            estim_nbins = length(estim_binCounts);
-            genSig_nbins = length(genSig_binCounts);
-
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Histogram of the Stimuli / Generator Signal Amplitudes',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
-            suptitle(figTitle);
-            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
-
-            %% Figure 4xx - Extracting Spike associated stimuli
+            %% Figure 3xx - Extracting Spike associated stimuli
             % Extract the values in the stimuli and the generator signal that caused a
             % spike. This would be a window of stimuli that immediately precede a spike
             % or the single generator signal value before that spike
@@ -176,9 +156,18 @@ for exp_id = exp_dict.keys()
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
-            %% Figure 5xx - Histograms for the spike associated stimuli/generator signal
-            figIdx = 5;
+            %% Figure 4xx - Overlay a histogram of spike-associated generator signals.
+            figIdx = 4;
             figure();
+
+            [estim_binCounts,estim_binEdges] = histcounts(estim_amps);
+            estim_binCenters = (estim_binEdges(1:end-1) + estim_binEdges(2:end))/2;
+
+            [genSig_binCounts,genSig_binEdges] = histcounts(genSig_vals);
+            genSig_binCenters = (genSig_binEdges(1:end-1) + genSig_binEdges(2:end))/2;
+
+            estim_nbins = length(estim_binCounts);
+            genSig_nbins = length(genSig_binCounts);
 
             ax1 = subplot(221);bar(estim_binCenters, estim_binCounts,'histc');title('Stimuli');
             ax2 = subplot(222);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
@@ -199,11 +188,11 @@ for exp_id = exp_dict.keys()
             linkaxes([ax1,ax3],'x');
             linkaxes([ax2,ax4],'x');
 
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Histogram of the Spike Associated Stimuli / Generator Signal Amplitudes',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Overlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
-            %% Figure 6xx - Firing Rate vs Generator Signal
+            %% Figure 5xx - [Incomplete] The probability of firing a spike vs. the generator signal
             % We would like to count the number of spikes corresponding to each value of the
             % generator signal. For this we first assign a generator signal value to
             % each spike time stamp. We then bin those spike_genSig_vals and count the
@@ -220,7 +209,7 @@ for exp_id = exp_dict.keys()
             xlabel('Gen. Sig');
             ylabel('#Spikes');
 
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Histogram of the #Spikes per bin of the Generator Signal Amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - The probability of firing a spike vs. the generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
         end
