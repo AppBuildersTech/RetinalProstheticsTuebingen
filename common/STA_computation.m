@@ -97,7 +97,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     if isnan(exp_ps.trials_to_use)
         trials_to_use = 1:num_trials;
     else
-        trials_to_use = eval(exp_ps.trials_to_use);
+        trials_to_use = exp_ps.trials_to_use;
     end
     
     if ~isnan(exp_ps.mat_stim)
@@ -167,7 +167,6 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
             tData(trialIdx).estim_ts = trial_estim_t; 
             tData(trialIdx).estim_spts = trial_estim_spt; 
             
-            estim_means = [estim_means,mean(estim_amps(trialIdx,:))];
             % estim_times = [estim_times; trial_estim_times];
             % the number of trial amplitutes should be 54 * 2500 = 135000
             % number of stimulus times is a subset of this total number because
@@ -181,7 +180,9 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     STA = STA' / nspikes; % Divides the Stimulus Sum/ Total Number of Spikes
 
     STA_t = (0.5 - exp_ps.tKerLen)* stimPeriod:stimPeriod:(exp_ps.tKerLen  - .5)* stimPeriod;
-    estim_mean = mean(estim_means);
+    
+    estim_mean = mean(mean(estim_amps,2));
+    estim_std = mean(std(estim_amps,0,2));% How much variance on average we have
 
     %% splined STA
     correctedSTA = STA;
@@ -202,6 +203,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     STA_ps.splinedSTA_t = splinedSTA_t;
     STA_ps.correctedSTA = correctedSTA;
     STA_ps.estim_mean = estim_mean;
+    STA_ps.estim_std = estim_std;
     STA_ps.nspikes = nspikes;
     
     STA_ps.tData = tData;

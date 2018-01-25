@@ -12,7 +12,7 @@ for exp_id = exp_dict.keys()
     exp_data_dir = fullfile(base_dir,'Data\',exp_id,'\');
     for cell_id = exp_dict(exp_id)
         cell_id = char(cell_id);
-        work_dir = fullfile(base_dir,'results\T01\',exp_id,'\',cell_id,'\');
+        work_dir = fullfile(base_dir,'results\T02\',exp_id,'\',cell_id,'\');
         config_file = fullfile(exp_data_dir,'analysis_config.ini');
 
         if ~exist(work_dir,'dir'), mkdir(work_dir); end
@@ -53,7 +53,7 @@ for exp_id = exp_dict.keys()
         Kw = length(STA_crop);
 
         %% Figure 1xx - STA PLots
-        figIdx = 100;
+        figIdx = 1;
         figure();
 
         subplot(4,1,[1,2]);
@@ -78,7 +78,7 @@ for exp_id = exp_dict.keys()
 
         subplot(414);plot(1:length(sta_sta_xcorr_full), sta_sta_xcorr_full,'k-');title('Padded XCorrelation of Kernel with itset');
 
-        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]_F01',exp_ps.exp_id,exp_ps.cell_id),'.jpeg']);
+        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.jpeg',figIdx)]);
 
         %% Rest of the figures
 
@@ -93,7 +93,10 @@ for exp_id = exp_dict.keys()
             %% Figure 2xx - The Stimulus and the Generator Signal
             figIdx = 2;
             figure();
-
+            
+            estim_amps_norm = (estim_amps - STA_ps.estim_mean) / STA_ps.estim_std;
+            STA_crop_norm = (STA_crop - STA_ps.estim_mean) / STA_ps.estim_std;
+            
             genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps,STA_crop);
             genSig_inds = Kw:length(genSig_vals)+Kw-1;
             genSig_ts = estim_ts(genSig_inds); %  We assign the timestamp corresponding to the end point of the xcorrel window to that genSig value
@@ -111,7 +114,7 @@ for exp_id = exp_dict.keys()
             % Extract the values in the stimuli and the generator signal that caused a
             % spike. This would be a window of stimuli that immediately precede a spike
             % or the single generator signal value before that spike
-            figIdx = 4;
+            figIdx = 3;
             figure();
 
             speriod = 1/exp_ps.stimFreq;%sampling period
@@ -197,7 +200,7 @@ for exp_id = exp_dict.keys()
             % generator signal. For this we first assign a generator signal value to
             % each spike time stamp. We then bin those spike_genSig_vals and count the
             % number of times a value falls within each bin and visualize it as a histogram.
-            figIdx = 6;
+            figIdx = 5;
             figure();
 
             spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts(estim_spts>=genSig_ts(1)));
@@ -209,7 +212,7 @@ for exp_id = exp_dict.keys()
             xlabel('Gen. Sig');
             ylabel('#Spikes');
 
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - The probability of firing a spike vs. the generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Number of spikes vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
         end
