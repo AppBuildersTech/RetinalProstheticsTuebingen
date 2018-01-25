@@ -169,9 +169,6 @@ for exp_id = exp_dict.keys()
             [genSig_binCounts,genSig_binEdges] = histcounts(genSig_vals);
             genSig_binCenters = (genSig_binEdges(1:end-1) + genSig_binEdges(2:end))/2;
 
-            estim_nbins = length(estim_binCounts);
-            genSig_nbins = length(genSig_binCounts);
-
             ax1 = subplot(221);bar(estim_binCenters, estim_binCounts,'histc');title('Normlzd Stimuli');
             ax2 = subplot(222);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
 
@@ -179,11 +176,11 @@ for exp_id = exp_dict.keys()
             sp_assoc_genSig_nonan = sp_assoc_genSig;
             sp_assoc_genSig_nonan(nan_idx) = [];
 
-            [sp_assoc_stimuli_binCounts,sp_assoc_stimuli_binEdges] = histcounts(sp_assoc_stimuli, estim_nbins);
+            [sp_assoc_stimuli_binCounts,sp_assoc_stimuli_binEdges] = histcounts(sp_assoc_stimuli, estim_binEdges);
             sp_assoc_stimuli_binCenters = (sp_assoc_stimuli_binEdges(1:end-1) + sp_assoc_stimuli_binEdges(2:end))/2;
             ax3 = subplot(223);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated Normlzd Stimuli');
 
-            [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig_nonan, genSig_nbins);
+            [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig_nonan, genSig_binEdges);
             sp_assoc_genSig_binCenters = (sp_assoc_genSig_binEdges(1:end-1) + sp_assoc_genSig_binEdges(2:end))/2;
 
             ax4 = subplot(224);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts,'histc');title('Spike Associated Gnerator Signal');
