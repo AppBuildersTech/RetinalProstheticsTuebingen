@@ -97,16 +97,16 @@ for exp_id = exp_dict.keys()
             estim_amps_norm = (estim_amps - STA_ps.estim_mean) / STA_ps.estim_std;
             STA_crop_norm = (STA_crop - STA_ps.estim_mean) / STA_ps.estim_std;
             
-            genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps,STA_crop);
+            genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps_norm,STA_crop_norm);
             genSig_inds = Kw:length(genSig_vals)+Kw-1;
             genSig_ts = estim_ts(genSig_inds); %  We assign the timestamp corresponding to the end point of the xcorrel window to that genSig value
 
-            ax1 = subplot(211);plot(estim_inds, estim_amps, 'b');
+            ax1 = subplot(211);plot(estim_inds, estim_amps_norm, 'b');
             ax2 = subplot(212);plot(genSig_inds, genSig_vals,'b');
             linkaxes([ax1,ax2],'x');
             xlim([1,length(estim_amps)]);
 
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - The Stmuli and the Generator Signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - The normlzd Stmuli and the Gen Signal computed for normlzd Stim/Kernel',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
 
@@ -120,15 +120,15 @@ for exp_id = exp_dict.keys()
             speriod = 1/exp_ps.stimFreq;%sampling period
             pre_spike_sample = 16;% for 25 Hz, samples are 0.04 s far.
 
-            spike_estim_vals = interp1(estim_ts,estim_amps,estim_spts); % the values of the stimulus at the spike timepoint used for plotting
-            sp_assoc_stimuli = NaN(size(estim_amps));%spike associated stimuli
+            spike_estim_vals = interp1(estim_ts,estim_amps_norm,estim_spts); % the values of the stimulus at the spike timepoint used for plotting
+            sp_assoc_stimuli = NaN(size(estim_amps_norm));%spike associated stimuli
             for spike_t = estim_spts' 
                 idx_tochange = ((estim_ts>=(spike_t-pre_spike_sample*speriod))&(estim_ts<spike_t));
-                sp_assoc_stimuli(idx_tochange) = estim_amps(idx_tochange);
+                sp_assoc_stimuli(idx_tochange) = estim_amps_norm(idx_tochange);
             end
 
-            ax1 = subplot(211);plot(estim_ts, estim_amps,'y');hold on;
-            plot(estim_ts, estim_amps,'k.');hold on;
+            ax1 = subplot(211);plot(estim_ts, estim_amps_norm,'y');hold on;
+            plot(estim_ts, estim_amps_norm,'k.');hold on;
             plot(estim_spts, spike_estim_vals,'r.');hold on;
             plot(estim_ts, sp_assoc_stimuli,'b*');hold on;
 
@@ -163,7 +163,7 @@ for exp_id = exp_dict.keys()
             figIdx = 4;
             figure();
 
-            [estim_binCounts,estim_binEdges] = histcounts(estim_amps);
+            [estim_binCounts,estim_binEdges] = histcounts(estim_amps_norm);
             estim_binCenters = (estim_binEdges(1:end-1) + estim_binEdges(2:end))/2;
 
             [genSig_binCounts,genSig_binEdges] = histcounts(genSig_vals);
@@ -172,7 +172,7 @@ for exp_id = exp_dict.keys()
             estim_nbins = length(estim_binCounts);
             genSig_nbins = length(genSig_binCounts);
 
-            ax1 = subplot(221);bar(estim_binCenters, estim_binCounts,'histc');title('Stimuli');
+            ax1 = subplot(221);bar(estim_binCenters, estim_binCounts,'histc');title('Normlzd Stimuli');
             ax2 = subplot(222);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
 
             nan_idx = isnan(sp_assoc_genSig);
@@ -181,7 +181,7 @@ for exp_id = exp_dict.keys()
 
             [sp_assoc_stimuli_binCounts,sp_assoc_stimuli_binEdges] = histcounts(sp_assoc_stimuli, estim_nbins);
             sp_assoc_stimuli_binCenters = (sp_assoc_stimuli_binEdges(1:end-1) + sp_assoc_stimuli_binEdges(2:end))/2;
-            ax3 = subplot(223);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated Stimuli');
+            ax3 = subplot(223);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated Normlzd Stimuli');
 
             [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig_nonan, genSig_nbins);
             sp_assoc_genSig_binCenters = (sp_assoc_genSig_binEdges(1:end-1) + sp_assoc_genSig_binEdges(2:end))/2;
