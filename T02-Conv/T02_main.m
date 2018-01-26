@@ -210,12 +210,20 @@ for exp_id = exp_dict.keys()
 
             spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts(estim_spts>=genSig_ts(1)));
 
-            [FRgenSig_binCounts, FRgenSig_binEdges] = histcounts(spike_genSig_vals);
+            [FRgenSig, FRgenSig_binEdges] = histcounts(spike_genSig_vals);
             FRgenSig_binCenters = (FRgenSig_binEdges(1:end-1) + FRgenSig_binEdges(2:end))/2;
 
-            bar(FRgenSig_binCenters,FRgenSig_binCounts,'histc');
-            xlabel('Gen. Sig');
-            ylabel('#Spikes');
+            [genSig_binCounts_tmp,~] = histcounts(genSig_vals, FRgenSig_binEdges);
+
+            FRgenSig = FRgenSig ./ genSig_binCounts_tmp; % divide each bin by the number of generator signals there
+            FRgenSig = FRgenSig .* exp_ps.stimFreq; % divide again by the sampling time to get the number of spikes per second (Hz)
+            
+            %bar(FRgenSig_binCenters,FRgenSig_binCounts,'histc');
+            plot(FRgenSig_binCenters,FRgenSig, 'b'); hold on;
+            plot(FRgenSig_binCenters,FRgenSig, 'k.');
+            
+            xlabel('Gen. Sig Value');
+            ylabel('Spikes Rate (Hz)');
 
             figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Number of spikes vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
