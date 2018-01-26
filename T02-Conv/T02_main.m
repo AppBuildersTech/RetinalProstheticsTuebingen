@@ -122,9 +122,11 @@ for exp_id = exp_dict.keys()
 
             spike_estim_vals = interp1(estim_ts,estim_amps_norm,estim_spts); % the values of the stimulus at the spike timepoint used for plotting
             sp_assoc_stimuli = NaN(size(estim_amps_norm));%spike associated stimuli
+            sp_assoc_stimuli_weighted = [];
             for spike_t = estim_spts' 
                 idx_tochange = ((estim_ts>=(spike_t-pre_spike_sample*speriod))&(estim_ts<spike_t));
                 sp_assoc_stimuli(idx_tochange) = estim_amps_norm(idx_tochange);
+                sp_assoc_stimuli_weighted = horzcat(sp_assoc_stimuli_weighted, estim_amps_norm(idx_tochange));
             end
 
             ax1 = subplot(211);plot(estim_ts, estim_amps_norm,'y');hold on;
@@ -142,10 +144,15 @@ for exp_id = exp_dict.keys()
 
             spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts);
             sp_assoc_genSig = NaN(size(genSig_vals));%spike associated generator signal
+            sp_assoc_genSig_weighted = [];
             for spike_t = estim_spts' 
                 idx_tochange = ((genSig_ts>=(spike_t-speriod))&(genSig_ts<spike_t));
                 sp_assoc_genSig(idx_tochange) = genSig_vals(idx_tochange);
+                sp_assoc_genSig_weighted = horzcat(sp_assoc_genSig_weighted, genSig_vals(idx_tochange)); % to be used in the next figures
             end
+            %sp_assoc_genSig_weighted has the value of the genSig multiple
+            %times. The count is set by the number of spikes happeing in
+            %the time-window associated with that generator signal value
 
             ax2 = subplot(212);plot(genSig_ts, genSig_vals,'y');hold on;
             plot(genSig_ts, genSig_vals,'k.');hold on;
@@ -169,24 +176,25 @@ for exp_id = exp_dict.keys()
             [genSig_binCounts,genSig_binEdges] = histcounts(genSig_vals);
             genSig_binCenters = (genSig_binEdges(1:end-1) + genSig_binEdges(2:end))/2;
 
-            ax1 = subplot(221);bar(estim_binCenters, estim_binCounts,'histc');title('Normlzd Stimuli');
-            ax2 = subplot(222);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
-
-            nan_idx = isnan(sp_assoc_genSig);
-            sp_assoc_genSig_nonan = sp_assoc_genSig;
-            sp_assoc_genSig_nonan(nan_idx) = [];
+            ax1 = subplot(321);bar(estim_binCenters, estim_binCounts,'histc');title('Normlzd Stimuli');
+            ax2 = subplot(322);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
 
             [sp_assoc_stimuli_binCounts,sp_assoc_stimuli_binEdges] = histcounts(sp_assoc_stimuli, estim_binEdges);
             sp_assoc_stimuli_binCenters = (sp_assoc_stimuli_binEdges(1:end-1) + sp_assoc_stimuli_binEdges(2:end))/2;
-            ax3 = subplot(223);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated Normlzd Stimuli');
+            ax3 = subplot(323);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated & Normlzd Stimuli');
+            
+            [sp_assoc_stimuli_binCounts_weighted,~] = histcounts(sp_assoc_stimuli_weighted, estim_binEdges);
+            ax5 = subplot(325);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts_weighted,'histc');title('Spike Associated & Weighted & Normlzd Stimuli');
 
-            [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig_nonan, genSig_binEdges);
+            [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig, genSig_binEdges);
             sp_assoc_genSig_binCenters = (sp_assoc_genSig_binEdges(1:end-1) + sp_assoc_genSig_binEdges(2:end))/2;
+            ax4 = subplot(324);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts,'histc');title('Spike Associated Gnerator Signal');
 
-            ax4 = subplot(224);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts,'histc');title('Spike Associated Gnerator Signal');
+            [sp_assoc_genSig_binCounts_weighted,~] = histcounts(sp_assoc_genSig_weighted, genSig_binEdges);
+            ax6 = subplot(326);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts_weighted,'histc');title('Spike Associated & Weighted Gnerator Signal');
 
-            linkaxes([ax1,ax3],'x');
-            linkaxes([ax2,ax4],'x');
+            linkaxes([ax1,ax3, ax5],'x');
+            linkaxes([ax2,ax4, ax6],'x');
 
             figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Overlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
