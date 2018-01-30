@@ -6,6 +6,8 @@ set(0,'DefaultFigureWindowStyle','docked');
 
 base_dir = 'C:\RathbumLab';
 
+fig_file_type = 'jpeg';
+
 exp_dict =  T01_datalist();
 for exp_id = exp_dict.keys()
     exp_id = char(exp_id);
@@ -78,7 +80,7 @@ for exp_id = exp_dict.keys()
 
         subplot(414);plot(1:length(sta_sta_xcorr_full), sta_sta_xcorr_full,'k-');title('Padded XCorrelation of Kernel with itset');
 
-        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.jpeg',figIdx)]);
+        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
         %% Rest of the figures
 
@@ -108,7 +110,7 @@ for exp_id = exp_dict.keys()
 
             figTitle = sprintf('%s [%s]\n trialIdx = %.2d - The normlzd Stmuli and the Gen Signal computed for normlzd Stim/Kernel',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
-            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
             %% Figure 3xx - Extracting Spike associated stimuli
             % Extract the values in the stimuli and the generator signal that caused a
@@ -164,7 +166,7 @@ for exp_id = exp_dict.keys()
 
             figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Extracting the spike associated stimuli/generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
-            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
             %% Figure 4xx - Overlay a histogram of spike-associated generator signals.
             figIdx = 4;
@@ -198,9 +200,9 @@ for exp_id = exp_dict.keys()
 
             figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Overlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
-            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
-            %% Figure 5xx - [Incomplete] The probability of firing a spike vs. the generator signal
+            %% Figure 5xx - Spike rate vs. the generator signal
             % We would like to count the number of spikes corresponding to each value of the
             % generator signal. For this we first assign a generator signal value to
             % each spike time stamp. We then bin those spike_genSig_vals and count the
@@ -225,9 +227,14 @@ for exp_id = exp_dict.keys()
             xlabel('Gen. Sig Value');
             ylabel('Spikes Rate (Hz)');
 
-            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Number of spikes vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Spike rate vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx);
             suptitle(figTitle);
-            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.jpeg',figIdx)]);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+            
+            %% Figure 7xx - PCA on spike associated stimuli waveforms
+            stimuli_excerpts = [];
+            sp_assoc_stimuli_excerpts = [];
+            
         end
     end
 end
