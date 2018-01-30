@@ -22,6 +22,5 @@ for xIdx = 1:T-Kw+1
     out_xcorr(xIdx) = Xin(xIdx:(xIdx+Kw-1)) * kernel';
 end
 
-
 end
 

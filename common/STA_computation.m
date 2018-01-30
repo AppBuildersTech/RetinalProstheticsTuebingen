@@ -17,9 +17,9 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
 
     A2a = A2a((1+exp_ps.cut_TTL_head):(end-exp_ps.cut_TTL_tail), 1);% this line was not the STA_simplified
     
-    length(A2a)
+    %length(A2a)
     trail_count_TTL = exp_ps.stimFreq*exp_ps.trial_length_in_secs;
-    num_trials = length(A2a)/trail_count_TTL
+    num_trials = length(A2a)/trail_count_TTL;
     
     %% ToDo: the following part of the code activated by BTA should be revised
     % otherwise it expected to be highly error prone

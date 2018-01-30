@@ -49,10 +49,10 @@ for exp_id = exp_dict.keys()
 
         %% Extracting STA and perparing variables
         estim_meanline = STA_ps.estim_mean * ones(2 * exp_ps.tKerLen, 1);
-        STA_crop = STA_ps.correctedSTA(crop1_idx:crop2_idx);
-        STA_t_crop = STA_ps.STA_t(crop1_idx:crop2_idx);
+        kernel = STA_ps.correctedSTA(crop1_idx:crop2_idx);
+        kernel_t = STA_ps.STA_t(crop1_idx:crop2_idx);
 
-        Kw = length(STA_crop);
+        Kw = length(kernel);
 
         %% Figure 1xx - STA PLots
         figIdx = 1;
@@ -63,7 +63,7 @@ for exp_id = exp_dict.keys()
         plot(STA_ps.STA_t(1,sta_d1_idx),STA_ps.correctedSTA(1,sta_d1_idx),'r*');
         plot(STA_ps.STA_t(1,sta_d2_idx),STA_ps.correctedSTA(1,sta_d2_idx),'r*');
 
-        plot(STA_t_crop,STA_crop,'r-','LineWidth',2);
+        plot(kernel_t,kernel,'r-','LineWidth',2);
 
         plt_ylim = [-1200, -400];
         yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));
@@ -74,9 +74,9 @@ for exp_id = exp_dict.keys()
         ylim([plt_ylim(1) plt_ylim(2)]);
         title(sprintf('STA plot for %s_[%s]',exp_ps.exp_id,exp_ps.cell_id), 'Interpreter', 'none');
 
-        subplot(413);plot(1:Kw, STA_crop,'b'); title('STA Crop, a.k.a Kernel');
+        subplot(413);plot(1:Kw, kernel,'b'); title('STA Crop, a.k.a Kernel');
 
-        sta_sta_xcorr_full = (1/exp_ps.stimFreq)*custom_xcorr(STA_crop,STA_crop,'full');
+        sta_sta_xcorr_full = (1/exp_ps.stimFreq)*custom_xcorr(kernel,kernel,'full');
 
         subplot(414);plot(1:length(sta_sta_xcorr_full), sta_sta_xcorr_full,'k-');title('Padded XCorrelation of Kernel with itset');
 
@@ -84,7 +84,7 @@ for exp_id = exp_dict.keys()
 
         %% Rest of the figures
 
-        for trialIdx = 17%1:length(STA_ps.tData)
+        for trialIdx = 1:length(STA_ps.tData)
             fig_basename = sprintf('%s_[%s]_trialIdx=%.2d',exp_ps.exp_id,exp_ps.cell_id,trialIdx);
 
             estim_amps = STA_ps.tData(trialIdx).estim_amps;
@@ -97,9 +97,9 @@ for exp_id = exp_dict.keys()
             figure();
             
             estim_amps_norm = (estim_amps - STA_ps.estim_mean) / STA_ps.estim_std;
-            STA_crop_norm = (STA_crop - STA_ps.estim_mean) / STA_ps.estim_std;
+            kernel_norm = (kernel - STA_ps.estim_mean) / STA_ps.estim_std;
             
-            genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps_norm,STA_crop_norm);
+            genSig_vals = (1/exp_ps.stimFreq)*custom_xcorr(estim_amps_norm,kernel_norm);
             genSig_inds = Kw:length(genSig_vals)+Kw-1;
             genSig_ts = estim_ts(genSig_inds); %  We assign the timestamp corresponding to the end point of the xcorrel window to that genSig value
 
@@ -231,9 +231,60 @@ for exp_id = exp_dict.keys()
             suptitle(figTitle);
             saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
             
-            %% Figure 7xx - PCA on spike associated stimuli waveforms
-            stimuli_excerpts = [];
-            sp_assoc_stimuli_excerpts = [];
+            %% Figure 6xx - PCA on spike associated stimuli waveforms
+            % ToDo: consider unifying the procedure to compute spike
+            % associated generator signal with spike associated stimuli waveforms
+            figIdx = 6;
+
+            T = size(estim_amps_norm,2);
+            estim_amps_excerpts = zeros(T-Kw+1,Kw);
+            sp_assoc_estim_excerpts = zeros(length(estim_spts),Kw);
+                        
+            for xIdx = 1:T-Kw+1
+                time_window = estim_ts(xIdx:(xIdx+Kw-1));
+                estim_amps_excerpts(xIdx,:) = estim_amps_norm(xIdx:(xIdx+Kw-1));
+            end
+            
+            for spIdx = 1:length(estim_spts)
+                spike_t = estim_spts(spIdx); 
+                genSig_Idx = find((genSig_ts>=(spike_t-speriod))&(genSig_ts<spike_t));
+                if length(genSig_Idx)
+                    sp_assoc_estim_excerpts(spIdx,:) = estim_amps_norm(genSig_Idx:(genSig_Idx+Kw-1));
+                end
+            end
+            if length(estim_spts)>1% if we actually had more than 2 spikes
+                nPCs = 2;
+                [PCs, var_perserved ] = custom_pca(sp_assoc_estim_excerpts,nPCs);
+
+                prj_estim_amps_excerpts = estim_amps_excerpts * PCs;
+                prj_sp_assoc_estim_excerpts = sp_assoc_estim_excerpts * PCs;
+
+                figure();
+                subplot(3,2,[1,4]);plot(prj_estim_amps_excerpts(:,1),prj_estim_amps_excerpts(:,2),'b.');hold on;
+                plot(prj_sp_assoc_estim_excerpts(:,1),prj_sp_assoc_estim_excerpts(:,2),'r*');
+                xlabel('PC1'); ylabel('PC2');
+
+                subplot(3,2,5);plot(kernel_t,PCs(:,1));title('PC1');
+                subplot(3,2,6);plot(kernel_t,PCs(:,2));title('PC2');
+
+                figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Projection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx,var_perserved);
+                suptitle(figTitle);
+                saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+            end
+            %% Figure 7xx - Stimuli segment waveform of "nWavefs" largest spike associated generator signal values
+            figIdx = 7;
+            nWavefs = 10;
+            [~,genSig_Ids] = maxk(sp_assoc_genSig,nWavefs);
+            figure(); 
+            for genSig_Idx = genSig_Ids'
+                estim_excerpt = estim_amps_norm(1, genSig_Idx:(genSig_Idx+Kw-1));
+                plot(kernel_t,estim_excerpt,'k');hold on;
+            end
+            
+            xlabel('t');
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Stimuli excerpts of %d largest spike associated generator signal values',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx,nWavefs);
+            suptitle(figTitle);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
             
         end
     end
