@@ -91,6 +91,8 @@ for exp_id = exp_dict.keys()
             estim_inds = 1:length(estim_amps); % stimulus sample indices used for plotting
             estim_ts = STA_ps.tData(trialIdx).estim_ts;
             estim_spts = STA_ps.tData(trialIdx).estim_spts;
+            
+            if length(estim_spts) > 1;continue;end
 
             %% Figure 2xx - The Stimulus and the Generator Signal
             figIdx = 2;
@@ -253,24 +255,25 @@ for exp_id = exp_dict.keys()
                 end
             end
             if length(estim_spts)>1% if we actually had more than 2 spikes
-                nPCs = 2;
-                [PCs, var_perserved ] = custom_pca(sp_assoc_estim_excerpts,nPCs);
 
-                prj_estim_amps_excerpts = estim_amps_excerpts * PCs;
-                prj_sp_assoc_estim_excerpts = sp_assoc_estim_excerpts * PCs;
+            nPCs = 2;
+            [PCs, var_perserved ] = custom_pca(sp_assoc_estim_excerpts,nPCs);
 
-                figure();
-                subplot(3,2,[1,4]);plot(prj_estim_amps_excerpts(:,1),prj_estim_amps_excerpts(:,2),'b.');hold on;
-                plot(prj_sp_assoc_estim_excerpts(:,1),prj_sp_assoc_estim_excerpts(:,2),'r*');
-                xlabel('PC1'); ylabel('PC2');
+            prj_estim_amps_excerpts = estim_amps_excerpts * PCs;
+            prj_sp_assoc_estim_excerpts = sp_assoc_estim_excerpts * PCs;
 
-                subplot(3,2,5);plot(kernel_t,PCs(:,1));title('PC1');
-                subplot(3,2,6);plot(kernel_t,PCs(:,2));title('PC2');
+            figure();
+            subplot(3,2,[1,4]);plot(prj_estim_amps_excerpts(:,1),prj_estim_amps_excerpts(:,2),'b.');hold on;
+            plot(prj_sp_assoc_estim_excerpts(:,1),prj_sp_assoc_estim_excerpts(:,2),'r*');
+            xlabel('PC1'); ylabel('PC2');
 
-                figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Projection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx,var_perserved);
-                suptitle(figTitle);
-                saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
-            end
+            subplot(3,2,5);plot(kernel_t,PCs(:,1));title('PC1');
+            subplot(3,2,6);plot(kernel_t,PCs(:,2));title('PC2');
+
+            figTitle = sprintf('%s [%s]\n trialIdx = %.2d - Projection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'), trialIdx,var_perserved);
+            suptitle(figTitle);
+            saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+            
             %% Figure 7xx - Stimuli segment waveform of "nWavefs" largest spike associated generator signal values
             figIdx = 7;
             nWavefs = 10;
