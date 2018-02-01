@@ -149,6 +149,9 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
                 end
                 trial_estim_spt(tsp_del_loc) = [];
             end
+            tData(trialIdx).estim_ts = trial_estim_t; 
+            tData(trialIdx).estim_spts = trial_estim_spt; 
+            
             % Corrects spike times based on starting TTL pulse of each trial, so that all spike times will be between 0 and 100s
             trial_estim_spt = trial_estim_spt - trial_estim_t(1);
             trial_estim_t = trial_estim_t - trial_estim_t(1);
@@ -164,8 +167,7 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
             nstim = nstim + trial_nstim;
 
             tData(trialIdx).estim_amps = estim_amps(trialIdx,:);
-            tData(trialIdx).estim_ts = trial_estim_t; 
-            tData(trialIdx).estim_spts = trial_estim_spt; 
+
             
             % estim_times = [estim_times; trial_estim_times];
             % the number of trial amplitutes should be 54 * 2500 = 135000
