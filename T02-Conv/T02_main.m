@@ -121,7 +121,7 @@ for exp_id = exp_dict.keys()
         linkaxes([ax1,ax2],'x');
         xlim([0,genSig_ts(end)]);
 
-        figTitle = sprintf('%s [%s]\n - The normlzd Stmuli and the Gen Signal computed for normlzd Stim/Kernel',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
+        figTitle = sprintf('%s [%s]\nThe normlzd Stmuli and the Gen Signal computed for normlzd Stim/Kernel',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
@@ -177,7 +177,7 @@ for exp_id = exp_dict.keys()
         xlim([0,100]);
         linkaxes([ax1,ax2],'x')
 
-        figTitle = sprintf('%s [%s]\n - Extracting the spike associated stimuli/generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
+        figTitle = sprintf('%s [%s]\nExtracting the spike associated stimuli/generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
@@ -211,7 +211,7 @@ for exp_id = exp_dict.keys()
         linkaxes([ax1,ax3, ax5],'x');
         linkaxes([ax2,ax4, ax6],'x');
 
-        figTitle = sprintf('%s [%s]\n - Overlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
+        figTitle = sprintf('%s [%s]\nOverlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
@@ -234,13 +234,18 @@ for exp_id = exp_dict.keys()
         FRgenSig = FRgenSig .* exp_ps.stimFreq; % divide again by the sampling time to get the number of spikes per second (Hz)
 
         %bar(FRgenSig_binCenters,FRgenSig_binCounts,'histc');
-        plot(FRgenSig_binCenters,FRgenSig, 'b'); hold on;
+        %plot(FRgenSig_binCenters,FRgenSig, 'b'); hold on;
+        p = polyfit(FRgenSig_binCenters,FRgenSig,3);
+        t2 = min(FRgenSig_binCenters):0.001:max(FRgenSig_binCenters);
+        y2 = polyval(p,t2);
+        
+        plot(t2,y2, 'b'); hold on;
         plot(FRgenSig_binCenters,FRgenSig, 'k.');
 
         xlabel('Gen. Sig Value');
         ylabel('Spikes Rate (Hz)');
 
-        figTitle = sprintf('%s [%s]\n - Spike rate vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
+        figTitle = sprintf('%s [%s]\nSpike rate vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
@@ -280,7 +285,7 @@ for exp_id = exp_dict.keys()
         subplot(3,2,5);plot(kernel_t,PCs(:,1));title('PC1');
         subplot(3,2,6);plot(kernel_t,PCs(:,2));title('PC2');
 
-        figTitle = sprintf('%s [%s]\n - Projection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),var_perserved);
+        figTitle = sprintf('%s [%s]\nProjection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),var_perserved);
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
@@ -295,7 +300,7 @@ for exp_id = exp_dict.keys()
         end
 
         xlabel('t');
-        figTitle = sprintf('%s [%s]\n - Stimuli excerpts of %d largest spike associated generator signal values',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),nWavefs);
+        figTitle = sprintf('%s [%s]\nStimuli excerpts of %d largest spike associated generator signal values',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),nWavefs);
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
