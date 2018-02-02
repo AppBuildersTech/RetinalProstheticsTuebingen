@@ -197,19 +197,17 @@ for exp_id = exp_dict.keys()
         ax1 = subplot(321);bar(estim_binCenters, estim_binCounts,'histc');title('Normlzd Stimuli');
         ax2 = subplot(322);bar(genSig_binCenters, genSig_binCounts,'histc');title('Generator Signal');
 
-        [sp_assoc_stimuli_binCounts,sp_assoc_stimuli_binEdges] = histcounts(sp_assoc_stimuli, estim_binEdges);
-        sp_assoc_stimuli_binCenters = (sp_assoc_stimuli_binEdges(1:end-1) + sp_assoc_stimuli_binEdges(2:end))/2;
-        ax3 = subplot(323);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated & Normlzd Stimuli');
+        [sp_assoc_stimuli_binCounts,~] = histcounts(sp_assoc_stimuli, estim_binEdges);
+        ax3 = subplot(323);bar(estim_binCenters, sp_assoc_stimuli_binCounts,'histc');title('Spike Associated & Normlzd Stimuli');
 
         [sp_assoc_stimuli_binCounts_weighted,~] = histcounts(sp_assoc_stimuli_weighted, estim_binEdges);
-        ax5 = subplot(325);bar(sp_assoc_stimuli_binCenters, sp_assoc_stimuli_binCounts_weighted,'histc');title('Spike Associated & Weighted & Normlzd Stimuli');
+        ax5 = subplot(325);bar(estim_binCenters, sp_assoc_stimuli_binCounts_weighted,'histc');title('Spike Associated & Weighted & Normlzd Stimuli');
 
-        [sp_assoc_genSig_binCounts,sp_assoc_genSig_binEdges] = histcounts(sp_assoc_genSig, genSig_binEdges);
-        sp_assoc_genSig_binCenters = (sp_assoc_genSig_binEdges(1:end-1) + sp_assoc_genSig_binEdges(2:end))/2;
-        ax4 = subplot(324);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts,'histc');title('Spike Associated Gnerator Signal');
+        [sp_assoc_genSig_binCounts,~] = histcounts(sp_assoc_genSig, genSig_binEdges);
+        ax4 = subplot(324);bar(genSig_binCenters, sp_assoc_genSig_binCounts,'histc');title('Spike Associated Gnerator Signal');
 
         [sp_assoc_genSig_binCounts_weighted,~] = histcounts(sp_assoc_genSig_weighted, genSig_binEdges);
-        ax6 = subplot(326);bar(sp_assoc_genSig_binCenters, sp_assoc_genSig_binCounts_weighted,'histc');title('Spike Associated & Weighted Gnerator Signal');
+        ax6 = subplot(326);bar(genSig_binCenters, sp_assoc_genSig_binCounts_weighted,'histc');title('Spike Associated & Weighted Gnerator Signal');
 
         linkaxes([ax1,ax3, ax5],'x');
         linkaxes([ax2,ax4, ax6],'x');
@@ -218,32 +216,43 @@ for exp_id = exp_dict.keys()
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
-        %% Figure 5xx - Spike rate vs. the generator signal
+        %% Figure 5xx - Stimuli segment waveform of "nWavefs" largest spike associated generator signal values
+        figIdx = 5;
+        nWavefs = 100;
+        [~,genSig_Ids] = maxk(sp_assoc_genSig,nWavefs);
+        figure(); hold on;
+        for genSig_Idx = genSig_Ids'
+            estim_excerpt = estim_amps_norm(1, genSig_Idx:(genSig_Idx+Kw-1));
+            plot(kernel_t,estim_excerpt,'k');hold on;
+        end
+        
+        exact_overlap = (sum(diff(estim_amps_norm(1, genSig_Ids))==0)/nWavefs)*100;
+        
+        xlabel('t');
+        figTitle = sprintf('%s [%s]\nStimuli excerpts of %d largest spike associated generator signal values\n%.1f %% Overlaps in the Waveforms'...
+            ,strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),nWavefs, exact_overlap);
+        suptitle(figTitle);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        
+        %% Figure 6xx - Spike rate vs. the generator signal
         % We would like to count the number of spikes corresponding to each value of the
         % generator signal. For this we first assign a generator signal value to
         % each spike time stamp. We then bin those spike_genSig_vals and count the
         % number of times a value falls within each bin and visualize it as a histogram.
-        figIdx = 5;
+        figIdx = 6;
         figure();
 
-        spike_genSig_vals = interp1(genSig_ts,genSig_vals,estim_spts(estim_spts>=genSig_ts(1)));
-
-        [FRgenSig, FRgenSig_binEdges] = histcounts(spike_genSig_vals);
-        FRgenSig_binCenters = (FRgenSig_binEdges(1:end-1) + FRgenSig_binEdges(2:end))/2;
-
-        [genSig_binCounts_tmp,~] = histcounts(genSig_vals, FRgenSig_binEdges);
-
-        FRgenSig = FRgenSig ./ genSig_binCounts_tmp; % divide each bin by the number of generator signals there
+        FRgenSig = sp_assoc_genSig_binCounts_weighted ./ genSig_binCounts; % divide each bin by the number of generator signals there
         FRgenSig = FRgenSig .* exp_ps.stimFreq; % divide again by the sampling time to get the number of spikes per second (Hz)
 
-        %bar(FRgenSig_binCenters,FRgenSig_binCounts,'histc');
-        %plot(FRgenSig_binCenters,FRgenSig, 'b'); hold on;
-        p = polyfit(FRgenSig_binCenters,FRgenSig,3);
-        t2 = min(FRgenSig_binCenters):0.001:max(FRgenSig_binCenters);
+        FRgenSig(isnan(FRgenSig)) = 0;
+        
+        p = polyfit(genSig_binCenters,FRgenSig,3);
+        t2 = min(genSig_binCenters):0.001:max(genSig_binCenters);
         y2 = polyval(p,t2);
         
         plot(t2,y2, 'b'); hold on;
-        plot(FRgenSig_binCenters,FRgenSig, 'k.');
+        plot(genSig_binCenters,FRgenSig, 'k.');
 
         xlabel('Gen. Sig Value');
         ylabel('Spikes Rate (Hz)');
@@ -252,32 +261,30 @@ for exp_id = exp_dict.keys()
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
-        %% Figure 6xx - PCA on spike associated stimuli waveforms
+        %% Figure 7xx - PCA on spike associated stimuli waveforms
         % ToDo: consider unifying the procedure to compute spike
         % associated generator signal with spike associated stimuli waveforms
-        figIdx = 6;
+        figIdx = 7;
 
         T = size(estim_amps_norm,2);
-        estim_amps_excerpts = zeros(T-Kw+1,Kw);
-        sp_assoc_estim_excerpts = zeros(length(estim_spts),Kw);
+        estim_amps_windowed = zeros(T-Kw+1,Kw);
+        sp_assoc_estim_excerpts = [];
 
+        sp_temp = [];
         for xIdx = 1:T-Kw+1
-            time_window = estim_ts(xIdx:(xIdx+Kw-1));
-            estim_amps_excerpts(xIdx,:) = estim_amps_norm(xIdx:(xIdx+Kw-1));
-        end
-
-        for spIdx = 1:length(estim_spts)
-            spike_t = estim_spts(spIdx); 
-            genSig_Idx = find((genSig_ts>=(spike_t-speriod))&(genSig_ts<spike_t));
-            if length(genSig_Idx)
-                sp_assoc_estim_excerpts(spIdx,:) = estim_amps_norm(genSig_Idx:(genSig_Idx+Kw-1));
+            estim_amps_windowed(xIdx,:) = estim_amps_norm(xIdx:(xIdx+Kw-1));
+            window_end_t = estim_ts(xIdx+Kw-1);
+            sp_ids = estim_spts>=window_end_t & estim_spts<=window_end_t+speriod;
+            if sum(sp_ids)>0
+                sp_assoc_estim_excerpts = vertcat(sp_assoc_estim_excerpts, estim_amps_windowed(xIdx,:));
+                % number of sp_assoc_estim_excerpts might be smaller than the spike counts. that would happen if the few first spikes actually happened within the first window
             end
         end
-
+        
         nPCs = 2;
         [PCs, var_perserved ] = custom_pca(sp_assoc_estim_excerpts,nPCs);
 
-        prj_estim_amps_excerpts = estim_amps_excerpts * PCs;
+        prj_estim_amps_excerpts = estim_amps_windowed * PCs;
         prj_sp_assoc_estim_excerpts = sp_assoc_estim_excerpts * PCs;
 
         figure();
@@ -288,22 +295,7 @@ for exp_id = exp_dict.keys()
         subplot(3,2,5);plot(kernel_t,PCs(:,1));title('PC1');
         subplot(3,2,6);plot(kernel_t,PCs(:,2));title('PC2');
 
-        figTitle = sprintf('%s [%s]\nProjection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),var_perserved);
-        suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
-
-        %% Figure 7xx - Stimuli segment waveform of "nWavefs" largest spike associated generator signal values
-        figIdx = 7;
-        nWavefs = 10;
-        [~,genSig_Ids] = maxk(sp_assoc_genSig,nWavefs);
-        figure(); 
-        for genSig_Idx = genSig_Ids'
-            estim_excerpt = estim_amps_norm(1, genSig_Idx:(genSig_Idx+Kw-1));
-            plot(kernel_t,estim_excerpt,'k');hold on;
-        end
-
-        xlabel('t');
-        figTitle = sprintf('%s [%s]\nStimuli excerpts of %d largest spike associated generator signal values',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),nWavefs);
+        figTitle = sprintf('%s [%s]\nProjection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),var_perserved*100);
         suptitle(figTitle);
         saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
 
