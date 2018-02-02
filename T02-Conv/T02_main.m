@@ -74,7 +74,7 @@ for exp_id = exp_dict.keys()
         ylim([plt_ylim(1) plt_ylim(2)]);
         title(sprintf('STA plot for %s_[%s]',exp_ps.exp_id,exp_ps.cell_id), 'Interpreter', 'none');
 
-        subplot(413);plot(1:Kw, kernel,'b'); title('STA Crop, a.k.a Kernel');
+        subplot(413);plot(kernel_t, kernel,'b'); title('STA Crop, a.k.a Kernel');
 
         sta_sta_xcorr_full = (1/exp_ps.stimFreq)*custom_xcorr(kernel,kernel,'full');
 
@@ -148,8 +148,9 @@ for exp_id = exp_dict.keys()
         plot(estim_ts, estim_amps_norm,'k.');hold on;
         plot(estim_spts, spike_estim_vals,'r.');hold on;
         plot(estim_ts, sp_assoc_stimuli,'b*');hold on;
-
-        xlim([0,100]);
+        
+        xlabel('t');ylabel('Norm Val (mV)');
+        xlim([0,max(estim_ts)]);
 
         % In the first subplot the yellow line shows the stimuli variations,
         % the black dots mark the sample points in the stimuli (might be overlayed by blue stars)
@@ -173,8 +174,10 @@ for exp_id = exp_dict.keys()
         plot(genSig_ts, genSig_vals,'k.');hold on;
         plot(estim_spts, spike_genSig_vals,'r.');hold on;
         plot(genSig_ts, sp_assoc_genSig,'b*');hold on;
+        
+        xlabel('t');ylabel('Norm Val (mV)');
+        xlim([0,max(estim_ts)]);
 
-        xlim([0,100]);
         linkaxes([ax1,ax2],'x')
 
         figTitle = sprintf('%s [%s]\nExtracting the spike associated stimuli/generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
