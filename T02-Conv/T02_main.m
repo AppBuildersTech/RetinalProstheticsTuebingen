@@ -6,7 +6,7 @@ set(0,'DefaultFigureWindowStyle','docked');
 
 base_dir = 'C:\RathbumLab';
 
-fig_file_type = 'jpeg';
+save_fig = 1;
 
 exp_dict =  T01_datalist();
 for exp_id = exp_dict.keys()
@@ -14,7 +14,7 @@ for exp_id = exp_dict.keys()
     exp_data_dir = fullfile(base_dir,'Data\',exp_id,'\');
     for cell_id = exp_dict(exp_id)
         cell_id = char(cell_id);
-        work_dir = fullfile(base_dir,'results\T02\',exp_id,'\',cell_id,'\');
+        work_dir = fullfile(base_dir,'results\T02_corrected\',exp_id,'\',cell_id,'\');
         config_file = fullfile(exp_data_dir,'analysis_config.ini');
 
         if ~exist(work_dir,'dir'), mkdir(work_dir); end
@@ -24,6 +24,8 @@ for exp_id = exp_dict.keys()
         exp_ps.cell_id = cell_id;
         exp_ps.work_dir = work_dir;
         exp_ps.data_dir = exp_data_dir;
+        
+        exp_ps.single_pulse_activation_correction = 1; % overwrite the single pulse correction
 
         [STA_ps, D_ps] = STA_computation(exp_ps);
 
@@ -80,8 +82,9 @@ for exp_id = exp_dict.keys()
 
         subplot(414);plot(1:length(sta_sta_xcorr_full), sta_sta_xcorr_full,'k-');title('Padded XCorrelation of Kernel with itset');
 
-        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
-        
+        saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
+
         %% Rest of the figures
 
         estim_amps = [];
@@ -123,7 +126,9 @@ for exp_id = exp_dict.keys()
 
         figTitle = sprintf('%s [%s]\nThe normlzd Stmuli and the Gen Signal computed for normlzd Stim/Kernel',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
 
         %% Figure 3xx - Extracting Spike associated stimuli
         % Extract the values in the stimuli and the generator signal that caused a
@@ -182,7 +187,8 @@ for exp_id = exp_dict.keys()
 
         figTitle = sprintf('%s [%s]\nExtracting the spike associated stimuli/generator signal',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
 
         %% Figure 4xx - Overlay a histogram of spike-associated generator signals.
         figIdx = 4;
@@ -214,7 +220,8 @@ for exp_id = exp_dict.keys()
 
         figTitle = sprintf('%s [%s]\nOverlay a histogram of spike-associated generator signals.',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
 
         %% Figure 5xx - Stimuli segment waveform of "nWavefs" largest spike associated generator signal values
         figIdx = 5;
@@ -232,8 +239,9 @@ for exp_id = exp_dict.keys()
         figTitle = sprintf('%s [%s]\nStimuli excerpts of %d largest spike associated generator signal values\n%.1f %% Overlaps in the Waveforms'...
             ,strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),nWavefs, exact_overlap);
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
-        
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
+
         %% Figure 6xx - Spike rate vs. the generator signal
         % We would like to count the number of spikes corresponding to each value of the
         % generator signal. For this we first assign a generator signal value to
@@ -259,7 +267,8 @@ for exp_id = exp_dict.keys()
 
         figTitle = sprintf('%s [%s]\nSpike rate vs. the generator signal amplitude',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'));
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
 
         %% Figure 7xx - PCA on spike associated stimuli waveforms
         % ToDo: consider unifying the procedure to compute spike
@@ -297,7 +306,8 @@ for exp_id = exp_dict.keys()
 
         figTitle = sprintf('%s [%s]\nProjection of the stimuli segments (var preseved %.2f %%).',strrep(exp_ps.exp_id,'_','.'),strrep(exp_ps.cell_id,'_','-'),var_perserved*100);
         suptitle(figTitle);
-        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,fig_file_type)]);
+        saveas(gcf, [exp_ps.work_dir, fig_basename, sprintf('_F%.2d.%s',figIdx,'jpeg')]);
+        if save_fig; saveas(gcf, [exp_ps.work_dir, sprintf('%s_[%s]',exp_ps.exp_id,exp_ps.cell_id), sprintf('_F%.2d.%s',figIdx,'fig')]);end
 
     end
 end

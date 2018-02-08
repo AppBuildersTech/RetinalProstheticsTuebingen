@@ -186,17 +186,23 @@ function [STA_ps, D_ps] = STA_computation(exp_ps)
     estim_mean = mean(mean(estim_amps,2));
     estim_std = mean(std(estim_amps,0,2));% How much variance on average we have
 
-    %% splined STA
+    %% splined STA and STA significance computation
+    % when the exp_ps.single_pulse_activation_correction is set then the
+    % returned STA will be zero time point correceted. If not then the program
+    % will still correct the zero time point (to clear the large negative
+    % deflection) and calculate D points but will return the non-corrected
+    % STA as for the suplined STA. This point should be made known to the user
     correctedSTA = STA;
     splinedSTA_t = STA_t(1):.001:STA_t(end)+0.001;
-    if exp_ps.single_pulse_activation_correction
-        correctedSTA(length(STA) / 2) = estim_mean;
-    end
+    correctedSTA(length(STA) / 2) = estim_mean;
     splinedSTA = spline(STA_t, correctedSTA, splinedSTA_t);
-
-    %% STA significance computation
     D_ps = STA_significance(splinedSTA, estim_mean, exp_ps);
-    
+       
+    if ~exp_ps.single_pulse_activation_correction % NOTE THIS IF and the above comments
+       splinedSTA = spline(STA_t, STA, splinedSTA_t);
+       correctedSTA = STA;
+    end
+
     %% Gather Details for later plottings
     STA_ps = struct;
     STA_ps.STA = STA;
