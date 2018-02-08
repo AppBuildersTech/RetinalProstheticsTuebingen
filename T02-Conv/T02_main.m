@@ -29,31 +29,34 @@ for exp_id = exp_dict.keys()
 
         [STA_ps, exp_ps] = STA_computation(exp_ps);
 
-        get_staIdx = @(splinedSTA_Idx) 2+fix(splinedSTA_Idx/((0.04/(STA_ps.splinedSTA_t(2)-STA_ps.splinedSTA_t(1)))+1));
-
-        sta_d1_idx = get_staIdx(STA_ps.D_ps.D1_idx);
-        sta_d2_idx = get_staIdx(STA_ps.D_ps.D2_idx);
+        sta_d1_idx = STA_ps.D_ps.D1_idx;
+        sta_d2_idx = STA_ps.D_ps.D2_idx;
 
         crop2_idx = length(STA_ps.STA);%the mid point can happen to not cross the exact zero point and that would be because we dont have samples there
 
         if ~isnan(STA_ps.D_ps.D2_cross_ids(1)) && STA_ps.D_ps.D2_issig
-            crop1_idx = get_staIdx(STA_ps.D_ps.D2_cross_ids(1));
+            crop1_idx = (STA_ps.D_ps.D2_cross_ids(1));
         elseif ~isnan(STA_ps.D_ps.D1_cross_ids(1))&& STA_ps.D_ps.D1_issig
-            crop1_idx = get_staIdx(STA_ps.D_ps.D1_cross_ids(1));
+            crop1_idx = (STA_ps.D_ps.D1_cross_ids(1));
         elseif ~isnan(STA_ps.D_ps.D2_finsig_ids(1)) && STA_ps.D_ps.D2_issig
-            crop1_idx = get_staIdx(STA_ps.D_ps.D2_finsig_ids(1));
+            crop1_idx = (STA_ps.D_ps.D2_finsig_ids(1));
         elseif ~isnan(STA_ps.D_ps.D1_finsig_ids(1))&& STA_ps.D_ps.D1_issig
-            crop1_idx = get_staIdx(STA_ps.D_ps.D1_finsig_ids(1));
+            crop1_idx = (STA_ps.D_ps.D1_finsig_ids(1));
         else
             crop1_idx = 1;
             display('Warning! No significant D2/D1 or no crossing were found! using the initial point of the STA.');
         end
 
         %% Extracting STA and perparing variables
-        estim_meanline = exp_ps.estim_mean * ones(1,exp_ps.tKerLen);
-        kernel = STA_ps.correctedSTA(crop1_idx:crop2_idx);
+        estim_meanline = exp_ps.estim_mean * ones(1,length(STA_ps.STA));
+                
+        kernel = STA_ps.STA(crop1_idx:crop2_idx);
         kernel_t = STA_ps.STA_t(crop1_idx:crop2_idx);
-
+        
+        kernel_SIdx = linspace(1,length(kernel),50);  % This is first alternative
+        kernelS = interp1(1:length(kernel), kernel, kernel_SIdx);
+        kernelS_t = interp1(1:length(kernel_t), kernel_t, kernel_SIdx);
+        
         Kw = length(kernel);
 
         %% Figure 1xx - STA PLots
@@ -61,11 +64,11 @@ for exp_id = exp_dict.keys()
         figure();
 
         subplot(4,1,[1,2]);
-        plot(STA_ps.STA_t,STA_ps.correctedSTA, 'b', 'LineWidth',2);hold on;
-        plot(STA_ps.STA_t(1,sta_d1_idx),STA_ps.correctedSTA(1,sta_d1_idx),'r*');
-        plot(STA_ps.STA_t(1,sta_d2_idx),STA_ps.correctedSTA(1,sta_d2_idx),'r*');
+        plot(STA_ps.STA_t,STA_ps.STA, 'b', 'LineWidth',2);hold on;
+        plot(STA_ps.STA_t(1,sta_d1_idx),STA_ps.STA(1,sta_d1_idx),'r*');
+        plot(STA_ps.STA_t(1,sta_d2_idx),STA_ps.STA(1,sta_d2_idx),'r*');
 
-        plot(kernel_t,kernel,'r-','LineWidth',2);
+        plot(kernelS_t,kernelS,'r-','LineWidth',2);
 
         plt_ylim = [-1200, -400];
         yaxis_line = zeros(length(plt_ylim(1):100:plt_ylim(2)));

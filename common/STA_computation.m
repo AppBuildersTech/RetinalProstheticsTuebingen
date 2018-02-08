@@ -176,11 +176,11 @@ function [STA_ps, exp_ps] = STA_computation(exp_ps)
     %% Gather Details for later plottings
     STA_ps = struct;
     
-    STA_ps.STA = STA;
-    STA_ps.STA_t = STA_t;
-    STA_ps.splinedSTA = splinedSTA;
-    STA_ps.splinedSTA_t = splinedSTA_t;
-    STA_ps.correctedSTA = correctedSTA;
+    STA_ps.STA = splinedSTA;
+    STA_ps.STA_t = splinedSTA_t;
+%     STA_ps.splinedSTA = splinedSTA;
+%     STA_ps.splinedSTA_t = splinedSTA_t;
+%     STA_ps.correctedSTA = correctedSTA;
     STA_ps.D_ps = D_ps;
     
     exp_ps.estim_mean = estim_mean;
