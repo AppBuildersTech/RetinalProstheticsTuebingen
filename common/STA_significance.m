@@ -1,4 +1,4 @@
-function out_p = STA_significance(STA, estim_mean, exp_ps)
+function out_p = STA_significance(STA_LS, STA_RS, estim_mean, exp_ps)
     % Signifance Algorithem
     % 	1 - Find the min/max deflections in the magnitude of the splined STA
     % 	2 - Check for significance of the deflections
@@ -6,19 +6,17 @@ function out_p = STA_significance(STA, estim_mean, exp_ps)
     % 	4 - Assign the one that comes closer to time zero (closer to half the STA length) to D1, and the other to D2
 
     % 	1 - Find the min/max deflections in the magnitude of the splined STA
-    STA_LS = STA(1:length(STA) / 2); %STA Left Side
-
     [~, maxD_idx] = max(sqrt(STA_LS.^2));
     [~, minD_idx] = min(sqrt(STA_LS.^2));
 
-    maxD_val = STA(maxD_idx);
-    minD_val = STA(minD_idx);
+    maxD_val = STA_LS(maxD_idx);
+    minD_val = STA_LS(minD_idx);
 
     % 	2 - Check for significance of the deflections
     alpha_val = (1 - nthroot(.95, exp_ps.tKerLen))/2;
 
-    STA_RS_mean = mean(STA(length(STA) / 2 + 1:end));%right side mean
-    STA_RS_std = std(STA(length(STA) / 2 + 1:end));%right side std
+    STA_RS_mean = mean(STA_RS);%right side mean
+    STA_RS_std = std(STA_RS);%right side std
 
     [maxD_issig, ~] = ztest(maxD_val, STA_RS_mean, STA_RS_std, 'Alpha', alpha_val); % h = 1 means an outlier, and we want an outlier
     [minD_issig, ~] = ztest(minD_val, STA_RS_mean, STA_RS_std, 'Alpha', alpha_val);

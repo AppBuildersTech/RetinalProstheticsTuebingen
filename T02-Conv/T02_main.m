@@ -27,30 +27,30 @@ for exp_id = exp_dict.keys()
         
         exp_ps.single_pulse_activation_correction = 1; % overwrite the single pulse correction
 
-        [STA_ps, D_ps] = STA_computation(exp_ps);
+        [STA_ps, exp_ps] = STA_computation(exp_ps);
 
-        get_staIdx = @(splinedSTA_Idx) 2+fix(splinedSTA_Idx/(((STA_ps.STA_t(2)-STA_ps.STA_t(1))/(STA_ps.splinedSTA_t(2)-STA_ps.splinedSTA_t(1)))+1));
+        get_staIdx = @(splinedSTA_Idx) 2+fix(splinedSTA_Idx/((0.04/(STA_ps.splinedSTA_t(2)-STA_ps.splinedSTA_t(1)))+1));
 
-        sta_d1_idx = get_staIdx(D_ps.D1_idx);
-        sta_d2_idx = get_staIdx(D_ps.D2_idx);
+        sta_d1_idx = get_staIdx(STA_ps.D_ps.D1_idx);
+        sta_d2_idx = get_staIdx(STA_ps.D_ps.D2_idx);
 
-        crop2_idx = fix(length(STA_ps.STA)/2);%the mid point can happen to not cross the exact zero point and that would be because we dont have samples there
+        crop2_idx = length(STA_ps.STA);%the mid point can happen to not cross the exact zero point and that would be because we dont have samples there
 
-        if ~isnan(D_ps.D2_cross_ids(1)) && D_ps.D2_issig
-            crop1_idx = get_staIdx(D_ps.D2_cross_ids(1));
-        elseif ~isnan(D_ps.D1_cross_ids(1))&& D_ps.D1_issig
-            crop1_idx = get_staIdx(D_ps.D1_cross_ids(1));
-        elseif ~isnan(D_ps.D2_finsig_ids(1)) && D_ps.D2_issig
-            crop1_idx = get_staIdx(D_ps.D2_finsig_ids(1));
-        elseif ~isnan(D_ps.D1_finsig_ids(1))&& D_ps.D1_issig
-            crop1_idx = get_staIdx(D_ps.D1_finsig_ids(1));
+        if ~isnan(STA_ps.D_ps.D2_cross_ids(1)) && STA_ps.D_ps.D2_issig
+            crop1_idx = get_staIdx(STA_ps.D_ps.D2_cross_ids(1));
+        elseif ~isnan(STA_ps.D_ps.D1_cross_ids(1))&& STA_ps.D_ps.D1_issig
+            crop1_idx = get_staIdx(STA_ps.D_ps.D1_cross_ids(1));
+        elseif ~isnan(STA_ps.D_ps.D2_finsig_ids(1)) && STA_ps.D_ps.D2_issig
+            crop1_idx = get_staIdx(STA_ps.D_ps.D2_finsig_ids(1));
+        elseif ~isnan(STA_ps.D_ps.D1_finsig_ids(1))&& STA_ps.D_ps.D1_issig
+            crop1_idx = get_staIdx(STA_ps.D_ps.D1_finsig_ids(1));
         else
             crop1_idx = 1;
             display('Warning! No significant D2/D1 or no crossing were found! using the initial point of the STA.');
         end
 
         %% Extracting STA and perparing variables
-        estim_meanline = STA_ps.estim_mean * ones(2 * exp_ps.tKerLen, 1);
+        estim_meanline = exp_ps.estim_mean * ones(1,exp_ps.tKerLen);
         kernel = STA_ps.correctedSTA(crop1_idx:crop2_idx);
         kernel_t = STA_ps.STA_t(crop1_idx:crop2_idx);
 
