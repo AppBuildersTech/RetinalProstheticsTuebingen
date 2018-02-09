@@ -4,11 +4,11 @@ close all;
 clc;clear;
 set(0,'DefaultFigureWindowStyle','docked');
 
-base_dir = 'C:\RathbumLab';
+base_dir = 'C:\RathbunLab';
 
 save_fig = 0;
 
-exp_dict =  T01_datalist();
+exp_dict =  T02_datalist();
 for exp_id = exp_dict.keys()
     exp_id = char(exp_id);
     exp_data_dir = fullfile(base_dir,'Data\',exp_id,'\');

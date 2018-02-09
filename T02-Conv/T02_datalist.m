@@ -1,4 +1,4 @@
-function exp_dict = T1_datalist()
+function exp_dict = T2_datalist()
 
 exp_dict = containers.Map;
 % exp_dict('2016_09_08_R1') = {'adch_21e','adch_22b'};
