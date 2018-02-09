@@ -6,6 +6,7 @@ function out_p = STA_significance(STA_LS, STA_RS, estim_mean, exp_ps)
     % 	4 - Assign the one that comes closer to time zero (closer to half the STA length) to D1, and the other to D2
 
     % 	1 - Find the min/max deflections in the magnitude of the splined STA
+    STA_LS(end) = estim_mean;
     [~, maxD_idx] = max(sqrt(STA_LS.^2));
     [~, minD_idx] = min(sqrt(STA_LS.^2));
 

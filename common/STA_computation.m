@@ -25,19 +25,22 @@ function [STA_ps, exp_ps] = STA_computation(exp_ps)
     % Get Stimulus amplitudes
     if ~isnan(exp_ps.mat_stim)
         estim_fname = strcat(fullfile(exp_ps.data_dir,exp_ps.mat_stim), '.mat');
-        estim_amps = importdata(estim_fname);
+        tmp_estim_amps = importdata(estim_fname);
+        estim_amps = zeros(experiment_nsample,1);
+        for trialIdx = 1:size(tmp_estim_amps,1)
+            estim_amps(((trialIdx-1)*trial_nsample+1):trialIdx*trial_nsample,1) = tmp_estim_amps(trialIdx, :);
+        end
     else
         estim_amps = zeros(experiment_nsample,1);
         for trialIdx = 1:experiment_nsample/trial_nsample
             if ~exp_ps.single_stim
                 estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_'), num2str(ceil(trialIdx)), '.txt');
                 temp_estim = importdata(estim_fname);
-                estim_amps(((trialIdx-1)*trial_nsample+1):trialIdx*trial_nsample,1) = get_estim_amp(temp_estim.textdata, exp_ps.Normalize);
             else
                 estim_fname = strcat(fullfile(exp_ps.data_dir,'rexp_1.txt'));
                 temp_estim = importdata(estim_fname);
-                estim_amps(((trialIdx-1)*trial_nsample+1):trialIdx*trial_nsample,1) = get_estim_amp(temp_estim.textdata, exp_ps.Normalize);
             end
+            estim_amps(((trialIdx-1)*trial_nsample+1):trialIdx*trial_nsample,1) = get_estim_amp(temp_estim.textdata, exp_ps.Normalize);
         end
     end
     
@@ -59,7 +62,10 @@ function [STA_ps, exp_ps] = STA_computation(exp_ps)
     end
         
     estim_t = estim_t - exp_ps.post_wait;
-
+   
+    %% Exclude spikes that occure before exp_ps.tKerLen
+    spiketimes(spiketimes<exp_ps.tKerLen*stimPeriod) = [];
+    
     %% ToDo: the following part of the code activated by BTA should be revised
     % otherwise it expected to be highly error prone
     if exp_ps.BTA
@@ -125,62 +131,59 @@ function [STA_ps, exp_ps] = STA_computation(exp_ps)
     end
 
     %% STA computation
-    Kw = exp_ps.tKerLen;
-    spike_counts = horzcat(0,histcounts(spiketimes,estim_t))';
-    sp = spike_counts(Kw:end);         
-    nsp = sum(sp); % Number of spikes which is the spike count variable for the STAs
+    spcount = horzcat(0,histcounts(spiketimes,estim_t))';
+    spcount = spcount(exp_ps.tKerLen:end); % a critical step        
+    nsp = sum(spcount); % Number of spikes which is the spike count variable for the STAs
 
     % the following line is where the shift in recorded electrical stimulation is happing
     % the source of this delay might be the equipment latency or even some cellular grounds
 
-    SS = makeStimRows(estim_amps,Kw);  % Convert stimulus to matrix where each row is one stim
-    slen = length(estim_t) - Kw; 
+    raw_stim_ensem = getStimSegments(estim_amps,exp_ps.tKerLen); % Convert stimulus to a matrix where each row is one segment of stim
+    
+    stim_len = length(estim_t) - exp_ps.tKerLen; 
     % Compute raw mean and covariance
-    RawMu = mean(SS)';
-    RawCov = (SS'*SS)/(slen-1)-RawMu*RawMu'*slen/(slen-1);
+    RawMu = mean(raw_stim_ensem)';
+    RawCov = (raw_stim_ensem'*raw_stim_ensem)/(stim_len-1)-RawMu*RawMu'*stim_len/(stim_len-1);
 
     % Compute spike-triggered mean and covariance
-    spikeIds = find(sp>0);
-    spikeIds((spikeIds+Kw)>(experiment_nsample-Kw+1)) = [];
+    spikeIds = find(spcount>0);
+    spikeIds((spikeIds+exp_ps.tKerLen)>(experiment_nsample-exp_ps.tKerLen+1)) = [];
     
-    STA = (sp(spikeIds)'*SS(spikeIds,:))/nsp;
-    postSTA = (sp(spikeIds)'*SS(spikeIds+Kw,:))'/nsp;
+    spike_assoc_ensemble = raw_stim_ensem(spikeIds,:);
+    spike_assoc_ensemble_spcount = spcount(spikeIds);
+    
+    STA = (spike_assoc_ensemble_spcount'*spike_assoc_ensemble)'/nsp;
+    STA_t = ((0.5 - exp_ps.tKerLen)* stimPeriod:stimPeriod:0)';% we want to show bin centers
 
-    STC = SS(spikeIds,:)'*(SS(spikeIds,:).*repmat(sp(spikeIds),1,Kw))/(nsp-1) - STA'*STA*nsp/(nsp-1);
+    STC = spike_assoc_ensemble'*(spike_assoc_ensemble.*repmat(spike_assoc_ensemble_spcount,1,exp_ps.tKerLen))/(nsp-1) - STA*STA'*nsp/(nsp-1);
     
-    STA_t = (1-Kw)*stimPeriod:stimPeriod:0;
+    postSTA = (spike_assoc_ensemble_spcount'*raw_stim_ensem(spikeIds+exp_ps.tKerLen,:))'/nsp;%will be used for significance check and visualization purposes
+    postSTA_t = (STA_t(end)+stimPeriod:stimPeriod:(exp_ps.tKerLen  - .5)* stimPeriod)';
     
     estim_mean = mean(estim_amps);
     estim_std = std(estim_amps);% How much variance on average we have
 
     %% splined STA and STA significance computation
+    D_ps = STA_significance(STA, postSTA, estim_mean, exp_ps);
+    
     % when the exp_ps.single_pulse_activation_correction is set then the
     % returned STA will be zero time point correceted. If not then the program
     % will still correct the zero time point (to clear the large negative
     % deflection) and calculate D points but will return the non-corrected
     % STA as for the suplined STA. This point should be made known to the user
-    correctedSTA = STA;
-    splinedSTA_t = linspace(STA_t(1),STA_t(end),length(STA_t)*100);
-
-    correctedSTA(end) = estim_mean;
-    splinedSTA = spline(STA_t, correctedSTA, splinedSTA_t);
-
-    D_ps = STA_significance(splinedSTA, postSTA, estim_mean, exp_ps);
-       
-    if ~exp_ps.single_pulse_activation_correction % NOTE THIS IF and the above comments
-       splinedSTA = spline(STA_t, STA, splinedSTA_t);
-       correctedSTA = STA;
+    if exp_ps.single_pulse_activation_correction % NOTE THIS IF and the above comments
+        STA(end) = estim_mean;
     end
-    
     
     %% Gather Details for later plottings
     STA_ps = struct;
     
-    STA_ps.STA = splinedSTA;
-    STA_ps.STA_t = splinedSTA_t;
-%     STA_ps.splinedSTA = splinedSTA;
-%     STA_ps.splinedSTA_t = splinedSTA_t;
-%     STA_ps.correctedSTA = correctedSTA;
+    STA_ps.STA = STA;
+    STA_ps.STA_t = STA_t;
+    
+    STA_ps.postSTA = postSTA;
+    STA_ps.postSTA_t = postSTA_t;
+    
     STA_ps.D_ps = D_ps;
     
     exp_ps.estim_mean = estim_mean;
@@ -190,12 +193,21 @@ function [STA_ps, exp_ps] = STA_computation(exp_ps)
     exp_ps.tData = struct;
     exp_ps.tData.estim_amps = estim_amps;
     exp_ps.tData.estim_ts = estim_t; 
-    exp_ps.tData.estim_spts = spiketimes; 
+    exp_ps.tData.estim_spts = spiketimes;
+    
+    exp_ps.tData.raw_stim_ensem = raw_stim_ensem;
+    exp_ps.tData.spike_assoc_ensemble = spike_assoc_ensemble;
+    exp_ps.tData.spike_assoc_ensemble_spcount = spike_assoc_ensemble_spcount;
 
 end
- 
-function S = makeStimRows(Stim, n)
-    S = fliplr(toeplitz(Stim(n:length(Stim), 1), Stim(n:-1:1,1)));
+
+function raw_stim_ensem = getStimSegments(estim,Kw)
+    %% return segmented stimuli, where each segment is Kw length and only 1 sample apart from the next segment
+    T = size(estim,1);
+    raw_stim_ensem = zeros(T-Kw+1,Kw);
+    for xIdx = 1:T-Kw+1
+        raw_stim_ensem(xIdx,:) = estim(xIdx:(xIdx+Kw-1),1);
+    end
 end
 
 function trial_estim_amps = get_estim_amp(textdata, Normalize)

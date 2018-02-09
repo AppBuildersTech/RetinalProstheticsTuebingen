@@ -6,20 +6,20 @@ if nargin<3
     xcorr_type = 'valid';
 end
 
-Kw = size(kernel,2);
+Kw = size(kernel,1);
 
 if Kw<2;error('The kernel shape should be 1 x Kw!');end
 
 if strcmp(xcorr_type,'full')
-    Xin = horzcat(zeros(1,Kw-1), Xin,zeros(1,Kw-1));
+    Xin = vertcat(zeros(Kw-1,1), Xin,zeros(Kw-1,1));
 end
 
-T = size(Xin,2);
+T = size(Xin,1);
 
 out_xcorr = zeros(T-Kw+1,1);
 
 for xIdx = 1:T-Kw+1
-    out_xcorr(xIdx) = Xin(xIdx:(xIdx+Kw-1)) * kernel';
+    out_xcorr(xIdx,1) = Xin(xIdx:(xIdx+Kw-1),1)' * kernel;
 end
 
 end
